@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   version="1.0"
+   width="1300"
+   height="1200"
+   id="svg2047">
+  <defs
+     id="defs2049" />
+  <g
+     transform="translate(185.2483,62.95949)"
+     id="layer1">
+    <rect
+       width="1135.5271"
+       height="1135.5271"
+       x="-140.61691"
+       y="-10.308821"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect4" />
+    <rect
+       width="1135.5271"
+       height="1135.5271"
+       x="-140.61691"
+       y="-10.308821"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect6" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="427.14658"
+       y="-10.308821"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect8" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="427.14658"
+       y="-10.308821"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect10" />
+    <text
+       x="711.02832"
+       y="34.047745"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text12">Vendor ID</text>
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="-140.61691"
+       y="-10.308821"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect14" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="-140.61691"
+       y="-10.308821"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect16" />
+    <text
+       x="143.26483"
+       y="34.047745"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text18">Device ID</text>
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="427.14658"
+       y="58.887405"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect20" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="427.14658"
+       y="58.887405"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect22" />
+    <text
+       x="711.02832"
+       y="103.24392"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text24">Command</text>
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="-140.61691"
+       y="58.887405"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect26" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="-140.61691"
+       y="58.887405"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect28" />
+    <text
+       x="143.26483"
+       y="103.24392"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text30">Status</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="129.8578"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect32" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="129.8578"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect34" />
+    <text
+       x="852.96924"
+       y="174.21437"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text36">Revision ID</text>
+    <rect
+       width="851.64526"
+       height="74.518959"
+       x="-140.61691"
+       y="129.8578"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect38" />
+    <rect
+       width="851.64526"
+       height="74.518959"
+       x="-140.61691"
+       y="129.8578"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect40" />
+    <text
+       x="285.20572"
+       y="174.21437"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text42">Class Code</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="-140.61691"
+       y="202.60252"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect44" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="-140.61691"
+       y="202.60252"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect46" />
+    <text
+       x="1.3239473"
+       y="246.95906"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text48">BIST</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="143.26483"
+       y="202.60252"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect50" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="143.26483"
+       y="202.60252"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect52" />
+    <text
+       x="285.20572"
+       y="246.95906"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text54">Header Type</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="427.14658"
+       y="202.60252"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect56" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="427.14658"
+       y="202.60252"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect58" />
+    <text
+       x="569.08746"
+       y="246.95906"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text60">Lat. Timer</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="202.60252"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect62" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="202.60252"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect64" />
+    <text
+       x="852.96924"
+       y="246.95906"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text66">Cache Line S.</text>
+    <rect
+       width="1135.5271"
+       height="425.82263"
+       x="-140.61691"
+       y="273.57294"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect68" />
+    <rect
+       width="1135.5271"
+       height="425.82263"
+       x="-140.61691"
+       y="273.57294"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect70" />
+    <text
+       x="427.14658"
+       y="493.58133"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text72">Base Address Registers</text>
+    <rect
+       width="1135.5271"
+       height="74.518959"
+       x="-140.61691"
+       y="699.39563"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect74" />
+    <rect
+       width="1135.5271"
+       height="74.518959"
+       x="-140.61691"
+       y="699.39563"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect76" />
+    <text
+       x="427.14658"
+       y="743.7522"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text78">Cardbus CIS Pointer</text>
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="427.14658"
+       y="770.36609"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect80" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="427.14658"
+       y="770.36609"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect82" />
+    <text
+       x="711.02832"
+       y="814.72266"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text84">Subsystem Vendor ID</text>
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="-140.61691"
+       y="770.36609"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect86" />
+    <rect
+       width="567.76355"
+       height="74.518959"
+       x="-140.61691"
+       y="770.36609"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect88" />
+    <text
+       x="143.26483"
+       y="814.72266"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text90">Subsystem ID</text>
+    <rect
+       width="1135.5271"
+       height="74.518959"
+       x="-140.61691"
+       y="841.33655"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect92" />
+    <rect
+       width="1135.5271"
+       height="74.518959"
+       x="-140.61691"
+       y="841.33655"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect94" />
+    <text
+       x="427.14658"
+       y="885.69305"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text96">Expansion ROM Base Address</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="912.30701"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect98" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="912.30701"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect100" />
+    <text
+       x="852.96924"
+       y="956.66351"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text102">Cap. Pointer</text>
+    <rect
+       width="851.64526"
+       height="74.518959"
+       x="-140.61691"
+       y="912.30701"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect104" />
+    <rect
+       width="851.64526"
+       height="74.518959"
+       x="-140.61691"
+       y="912.30701"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect106" />
+    <text
+       x="285.20572"
+       y="956.66351"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text108">Reserved</text>
+    <rect
+       width="1135.5271"
+       height="74.518959"
+       x="-140.61691"
+       y="983.2774"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect110" />
+    <rect
+       width="1135.5271"
+       height="74.518959"
+       x="-140.61691"
+       y="983.2774"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect112" />
+    <text
+       x="427.14658"
+       y="1027.6339"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text114">Reserved</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="-140.61691"
+       y="1054.2478"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect116" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="-140.61691"
+       y="1054.2478"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect118" />
+    <text
+       x="1.3239473"
+       y="1098.6044"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text120">Max Lat.</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="143.26483"
+       y="1054.2478"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect122" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="143.26483"
+       y="1054.2478"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect124" />
+    <text
+       x="285.20572"
+       y="1098.6044"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text126">Min Gnt.</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="427.14658"
+       y="1054.2478"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect128" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="427.14658"
+       y="1054.2478"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect130" />
+    <text
+       x="569.08746"
+       y="1098.6044"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text132">Interrupt Pin</text>
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="1054.2478"
+       style="fill:white;stroke:none;stroke-width:0"
+       id="rect134" />
+    <rect
+       width="283.88177"
+       height="74.518959"
+       x="711.02832"
+       y="1054.2478"
+       style="fill:none;stroke:black;stroke-width:3.548522"
+       id="rect136" />
+    <text
+       x="852.96924"
+       y="1098.6044"
+       style="font-size:35.48522186px;font-style:normal;font-weight:700;text-anchor:middle;fill:black;font-family:sans"
+       id="text138">Interrupt Line</text>
+    <text
+       x="977.16748"
+       y="-28.051374"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text140">0</text>
+    <text
+       x="427.14658"
+       y="-28.051374"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text142">15</text>
+    <text
+       x="373.91873"
+       y="-28.051374"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text144">16</text>
+    <text
+       x="-140.61691"
+       y="-28.051374"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text146">31</text>
+    <text
+       x="1012.6527"
+       y="28.334612"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text148">00h</text>
+    <text
+       x="1012.6527"
+       y="99.305077"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text150">04h</text>
+    <text
+       x="1012.6527"
+       y="170.27547"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text152">08h</text>
+    <text
+       x="1012.6527"
+       y="241.24593"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text154">0Ch</text>
+    <text
+       x="1012.6527"
+       y="312.21634"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text156">10h</text>
+    <text
+       x="1012.6527"
+       y="383.1868"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text158">14h</text>
+    <text
+       x="1012.6527"
+       y="454.15723"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text160">18h</text>
+    <text
+       x="1012.6527"
+       y="525.12775"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text162">1Ch</text>
+    <text
+       x="1012.6527"
+       y="596.09821"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text164">20h</text>
+    <text
+       x="1012.6527"
+       y="667.06866"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text166">24h</text>
+    <text
+       x="1012.6527"
+       y="738.03906"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text168">28h</text>
+    <text
+       x="1012.6527"
+       y="809.00952"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text170">2Ch</text>
+    <text
+       x="1012.6527"
+       y="879.97998"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text172">30h</text>
+    <text
+       x="1012.6527"
+       y="950.95038"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text174">34h</text>
+    <text
+       x="1012.6527"
+       y="1021.9208"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text176">38h</text>
+    <text
+       x="1012.6527"
+       y="1092.8912"
+       style="font-size:35.48522186px;font-style:normal;font-weight:400;text-anchor:start;fill:black;font-family:sans"
+       id="text178">3Ch</text>
+  </g>
+</svg>
