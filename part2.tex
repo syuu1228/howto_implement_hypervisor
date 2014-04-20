@@ -6,7 +6,7 @@
 \maketitle
 
 \section{VMCSの構造}
-それでは、前回のハイパーバイザのライフサイクルの説明でも度々紹介したハイパーバイザ側のコンフィグレーション情報であるVMCS（Virtual Machine Control Structure）の内部構造を以下に説明します。
+それでは、前回のハイパーバイザのライフサイクルの説明でも度々紹介したハイパーバイザ側のコンフィグレーション情報であるVMCS（Virtual Machine Control Structure）の内部構造（図\ref{fig1}）を以下に説明します。
 
 \begin{figure}
 \includegraphics{figures/part2_fig1.eps}
@@ -153,10 +153,10 @@ CPUからメモリへのアクセスがあった時、MMUはページテーブ�
 \label{fig4}
 \end{figure}
 
-64bitモードの場合は8バイトのページテーブルエントリがテーブル当たり512エントリとなり、さらにページディレクトリポインタテーブルとページマップレベル4テーブルの2段が追加されて256TBの仮想メモリ空間をサポートしています((32bit PAEモードの場合も64bitモードのように段数が追加されて仮想メモリ空間が拡張されますが、ここでは解説を省略します。))（図\ref{fig5}）。
+64bitモードの場合は8バイトのページテーブルエントリがテーブル当たり512エントリとなり、さらにページディレクトリポインタテーブルとページマップレベル4テーブルの2段が追加されて256TBの仮想メモリ空間をサポートしています\footnote{32bit PAEモードの場合も64bitモードのように段数が追加されて仮想メモリ空間が拡張されますが、ここでは解説を省略します。}（図\ref{fig5}）。
 
 \begin{figure}
-\includegraphics{figures/part2_fig5.eps}
+\includegraphics[width=1.0\textwidth]{figures/part2_fig5.eps}
 \caption{64bitモードの仮想メモリ空間}
 \label{fig5}
 \end{figure}
@@ -205,7 +205,7 @@ Nehalem以降のIntelのCPUでは、メモリ仮想化をCPUで支援する機�
 これにより、ゲストマシンから仮想メモリ空間への参照が行われた時に、CR3にセットされたページテーブルでゲスト物理アドレスへの変換が行われます。さらにEPTPにセットされたページテーブルでゲスト物理アドレスからホスト物理アドレスへの変換が行われます（図\ref{fig7}）。
 
 \begin{figure}
-\includegraphics{figures/part2_fig7.eps}
+\includegraphics[width=1.0\textwidth]{figures/part2_fig7.eps}
 \caption{ゲスト物理アドレスからホスト物理アドレスへの変換}
 \label{fig7}
 \end{figure}
