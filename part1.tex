@@ -17,7 +17,7 @@
 
 内容を簡単に説明すると、システム資源の構成を変えようとする命令やシステム資源の構成に動作が依存している命令（「センシティブな命令」と呼ばれる）がユーザモードで実行されるときには、これがトラップされなければならない、ということを言っています（図\ref{fig1}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part1_fig1.eps}
 \caption{センシティブな命令}
 \label{fig1}
@@ -51,7 +51,7 @@ VMwareでは、Binary Translationと呼ばれる手法が採られました。�
 \section{Intel VT-x の概要}
 それではこの、PCの仮想化に必須の技術となっているVT-xの中身について見て行きましょう。VT-xでは、既存のソフトウェアとの互換性を保ちつつ「仮想化可能」にするため、x86アーキテクチャにすでに存在するプログラムの権限管理に用いられるRingプロテクションのしくみとは別に、ハイパーバイザ向けのプロテクションモデルを導入しています。このために「ハイパーバイザのモード」と「ゲストマシンのモード」が追加されました。この「ハイパーバイザのモード」をVMX Root Mode、「ゲストマシンのモード」をVMX non Root Modeと呼びます（図\ref{fig2}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part1_fig2.eps}
 \caption{VMX non Root Mode}
 \label{fig2}
@@ -64,7 +64,7 @@ VMwareでは、Binary Translationと呼ばれる手法が採られました。�
 
 このとき、VMX Root ModeからVMX non RootModeへ切り替えることをVMEntry、VMX non RootModeが中断されVMX Root Modeへ戻ってくることをVMExitと呼びます（図\ref{fig3}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part1_fig3.eps}
 \caption{VMEntry、VMExit}
 \label{fig3}
@@ -126,7 +126,7 @@ VMCSの"VM-exit information fields"に書き込まれたVMExit要因を調べ、
 \subsection*{(12)「(3)に戻る」}
 以上のように、VMX non Root Modeでのゲストマシン実行とVMExit要因ごとのエミュレーション処理を繰り返すことにより、仮想化環境が実現されます（図\ref{fig4}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part1_fig4.eps}
 \caption{VT-x のライフサイクル}
 \label{fig4}
