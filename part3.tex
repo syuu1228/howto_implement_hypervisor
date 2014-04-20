@@ -205,17 +205,39 @@ Oポートへアクセスされているのか、アクセス方向
 が読み込みだったのか、あるいは書き込みだったの
 かがわかりません。これらの情報は、VM-Exit
 Information FieldsのExit qualificationフィールドで
-提供されます(表1)。
+提供されます(表\ref{tab1})。
 
-%\begin{table}
-%\begin{tabular}{|l|l|} \hline
-%\end{tabular}
-%\caption{▼表 1   Exit Reason 30 のときの Exit qualification}
-%\end{table}
+\begin{table}
+\begin{tabular}{|l|l|} \hline
+
+ビットポジション & 内容 \\
+\hline
+2:00 & アクセスサイズ(0 = 1byte、1 = 2byte、3 = 4byte) 	\\
+\hline
+3 & アクセス方向(0 = 書き込み、1 = 読み取り) 	\\
+\hline
+4 & String 命令(0 = 非 string、1 = string) 	\\
+\hline
+5 & REP プレフィックス(0 = REP あり、1 = REP) \\
+\hline
+6 & ポート番号指定方法(0 = DX 間接、1 = 即値) \\
+\hline
+15:07 & Reserved 	\\
+\hline
+31:16:00 & ポート番号 \\
+\hline
+63:32:00 & Reserved \\
+\hline
+
+
+\end{tabular}
+\caption{Exit Reason 30 のときの Exit qualification}
+\label{tab1}
+\end{table}
 
  
  このフィールドはExit要因ごとに異なる追加情報
-を提供しており、VMExit Reason 48の場合は表3の
+を提供しており、VMExit Reason 48の場合は表\ref{tab3}の
 ような情報を提供します。ハイパーバイザはExit
 qualificationフィールドからポート番号などの情報を
 読み込み、ポート番号に合わせたデバイスエミュ
@@ -257,13 +279,32 @@ Exception Bitmapの14bit目(page fault exception)に
 す。 VMExitが発生した時、ハイパーバイザはExit要
 因が0であることを確認したあと、 VMCSのVM-Exit
 Information Fieldsに あ るVM-exit interruption
-informationを参照します(表2)。
+informationを参照します(表\ref{tab2})。
 
-%\begin{table}
-%\begin{tabular}{|l|l|} \hline
-%\end{tabular}
-%\caption{▼表 2   VM-exit interruption information}
-%\end{table}
+\begin{table}
+\begin{tabular}{|l|l|} \hline
+
+ビットポジション & 内容 \\
+\hline
+7:00 & 割り込みベクタ番号 \\
+\hline
+10:08 & 割り込みタイプ(0 =外部割り込み、2 = NMI、3 =ハードウェア例外、6 =ソフトウェア例外) \\
+\hline
+11 & Error code が正常 \\
+\hline
+12 & IRET による NMI ブロック解除 \\
+\hline
+30:13:00 & Reserved \\
+\hline
+31 & VM-exit interruption information が正常 \\
+\hline
+
+
+
+\end{tabular}
+\caption{VM-exit interruption information}
+\label{tab2}
+\end{table}
 
  この場合、ハイパーバイザは割り込みベクタ番号
 が14 ( \#PF例外)で、割り込みタイプがビット3 (ハー
@@ -323,13 +364,58 @@ qualificationフィールドを参照するとアクセス方向
 (readまたはwrite)を得ることができます。しかし、
 I/Oをエミュレーションするにはアクセスサイズ、
 データの書き込み先・読み込み元などの情報が足りま
-せん(表3)。
+せん(表\ref{tab3})。
 
-%\begin{table}
-%\begin{tabular}{|l|l|} \hline
-%\end{tabular}
-%\caption{▼表 3   Exit Reason 48 のときの Exit qualification}
-%\end{table}
+\begin{table}
+\begin{tabular}{|l|l|} \hline
+
+ビットポジション & 内容 \\
+\hline
+0	& EPT violation の原因は data read \\
+\hline
+
+1	& EPT violation の原因は data write \\
+\hline
+
+2	& EPT violation の原因は instruction fetch \\
+\hline
+
+3 & アクセスされたページに対応するEPTエントリのread accessと、このExit qualificationの0 ビット目との AND \\
+\hline
+
+4 & アクセスされたページに対応するEPTエントリのwrite accessと、このExit qualificationの1 ビット目との AND \\
+\hline
+
+5 & アクセスされたページに対応するEPTエントリのexecute accessと、このExit qualificationの 2 ビット目との AND \\
+\hline
+
+6 & Reserved \\
+\hline
+
+7 & VMCS の VM-Exit Information Fields の Guest-linear address が有効 \\
+\hline
+
+8 & 1 = EPT violation の原因がゲストフィジカルアドレスへのアクセス \\
+	& 0 = EPT violation の原因が EPT のページウォーク中や EPT のページテーブルエントリの更新  \\
+\hline
+
+
+11:09 & Reserved \\
+\hline
+
+12 & IRET による NMI ブロック解除 \\
+\hline
+
+63:13:00 & Reserved \\
+\hline
+
+
+
+\end{tabular}
+\caption{Exit Reason 48 のときの Exit qualification}
+\label{tab3}
+
+\end{table}
 
  シャドーページングの場合と同様に、VT-xはこれ
 らの情報を提供していません。このため、ハイパー
@@ -381,14 +467,25 @@ VM-Execution fields へ設定します。これにより、
 APIC access page へアクセスが発生した際に、
 VMExit reason 44 (APIC access)が発生するように
 なります。このとき、VM Exit qualification を参照す
-ると(表 4)、アクセスのあったレジスタとアクセス方
+ると(表\ref{tab4})、アクセスのあったレジスタとアクセス方
 向(read だったのか write だったのか)がわかります。
 
-%\begin{table}
-%\begin{tabular}{|l|l|} \hline
-%\end{tabular}
-%\caption{▼表 4   Exit Reason 44 のときの Exit qualification}
-%\end{table}
+\begin{table}
+\begin{tabular}{|l|l|} \hline
+ビットポジション & 内容 \\
+\hline
+11:00 & アクセスのあったレジスタ(APIC page からのオフセット) \\
+\hline
+15:12 & アクセスタイプ(read、write、execute など) \\
+\hline
+63:16:00 & Reserved \\
+\hline
+
+\end{tabular}
+\caption{Exit Reason 44 のときの Exit qualification}
+\label{tab4}
+
+\end{table}
 
  これだけの情報では命令エミュレーションが避け
 られないレジスタもありますが、 EOIレジスタに関し
