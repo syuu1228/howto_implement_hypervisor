@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>(8)「何らかのトラップ要因が発生、VMExitする」</TITLE>
+<META NAME="description" CONTENT="(8)「何らかのトラップ要因が発生、VMExitする」">
+<META NAME="keywords" CONTENT="part1">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part1.css">
+
+<LINK REL="next" HREF="node16.html">
+<LINK REL="previous" HREF="node14.html">
+<LINK REL="up" HREF="node7.html">
+<LINK REL="next" HREF="node16.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html193"
+  HREF="node16.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html191"
+  HREF="node7.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html185"
+  HREF="node14.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html194"
+  HREF="node16.html">(9)「ゲストのレジスタを退避」</A>
+<B> Up:</B> <A NAME="tex2html192"
+  HREF="node7.html">VT-xを用いたハイパーバイザのライフサイクル</A>
+<B> Previous:</B> <A NAME="tex2html186"
+  HREF="node14.html">(7)「ゲストマシン実行」</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00078000000000000000">
+(8)「何らかのトラップ要因が発生、VMExitする」</A>
+</H2>
+センシティブ命令の実行や外部割り込みなどの要因によりVMExitが発生すると、CPUはVMCの"VM-exit information fields"へVMExit要因を書き込み、"Guest state area"へゲストのレジスタを退避し、"Host state area" からホストのレジスタを復帰し、CPUのモードをVMX Root modeへ切り替えます。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

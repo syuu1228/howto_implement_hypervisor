@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>シャドーページング</TITLE>
+<META NAME="description" CONTENT="シャドーページング">
+<META NAME="keywords" CONTENT="part2">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part2.css">
+
+<LINK REL="next" HREF="node20.html">
+<LINK REL="previous" HREF="node18.html">
+<LINK REL="up" HREF="part2.html">
+<LINK REL="next" HREF="node20.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html233"
+  HREF="node20.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html231"
+  HREF="part2.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html225"
+  HREF="node18.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html234"
+  HREF="node20.html">EPT</A>
+<B> Up:</B> <A NAME="tex2html232"
+  HREF="part2.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel VT-xの概要とメモリ仮想化</A>
+<B> Previous:</B> <A NAME="tex2html226"
+  HREF="node18.html">x86アーキテクチャにおけるページング機構</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00050000000000000000">
+シャドーページング</A>
+</H1>
+ゲストOSが各プロセスに対して作成したページテーブルとページディレクトリテーブルをそのまま実際のCPUのCR3レジスタに設定すると、現実の物理メモリ空間が参照されてしまいます。これではハイパーバイザが意図しないメモリ領域を参照することになってしまいます。これを防ぐため、ハイパーバイザはゲストのページディレクトリテーブルとページテーブルを複製し、ハイパーバイザがゲストマシンに割り当てたメモリ範囲を反映した物理ページ番号をページテーブルの各エントリに書き込み、CPUのCR3レジスタに複製したページディレクトリテーブルを書き込みます（図<A HREF="#fig6">6</A>）。
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig6"></A><A NAME="65"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 6:</STRONG>
+シャドーページング</CAPTION>
+<TR><TD><IMG
+ WIDTH="724" HEIGHT="505" ALIGN="BOTTOM" BORDER="0"
+ SRC="img6.png"
+ ALT="\includegraphics{figures/part2_fig6.eps}"></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+これにより、ゲストマシンの実行時に仮想ページへアクセスが生じた時、ゲストOSが設定したゲストマシン内の物理ページ番号ではなく、ハイパーバイザが設定した実際の物理ページ番号を参照するようになります。以上により適切なメモリ領域へ参照が行えるようになります。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

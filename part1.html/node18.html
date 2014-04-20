@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>(11)「VMExit要因を調べ、要因に合わせたエミュレーション処理を行う」</TITLE>
+<META NAME="description" CONTENT="(11)「VMExit要因を調べ、要因に合わせたエミュレーション処理を行う」">
+<META NAME="keywords" CONTENT="part1">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part1.css">
+
+<LINK REL="next" HREF="node19.html">
+<LINK REL="previous" HREF="node17.html">
+<LINK REL="up" HREF="node7.html">
+<LINK REL="next" HREF="node19.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html223"
+  HREF="node19.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html221"
+  HREF="node7.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html215"
+  HREF="node17.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html224"
+  HREF="node19.html">(12)「(3)に戻る」</A>
+<B> Up:</B> <A NAME="tex2html222"
+  HREF="node7.html">VT-xを用いたハイパーバイザのライフサイクル</A>
+<B> Previous:</B> <A NAME="tex2html216"
+  HREF="node17.html">(10)「ハイパーバイザのレジスタを復帰」</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION000711000000000000000">
+(11)「VMExit要因を調べ、要因に合わせたエミュレーション処理を行う」</A>
+</H2>
+VMCSの"VM-exit information fields"に書き込まれたVMExit要因を調べ、要因に合わせたエミュレーション処理を行います。特権レジスタへの読み書きであればレジスタの挙動をエミュレーションする必要がありますし、ハードウェアへのI/O命令であれば対象のハードウェアの挙動をエミュレーションする必要があります。
+どのようなイベントでVMExitを発生させることができるのかについては[<A
+ HREF="node22.html#SDM">2</A>]を参照してください。
+
+<P>
+また、この時、次回のVMEntryが異なるCPUから実行される可能性がある場合は、必ずVMCLEAR命令を実行してCPUからVMCSのアドレスをクリアしなければなりません。これは、VMCLEAR命令を実行するまではVMCSのデータがメモリへライトバックされていることが保証されないためです。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

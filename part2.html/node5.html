@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Guest-state area</TITLE>
+<META NAME="description" CONTENT="Guest-state area">
+<META NAME="keywords" CONTENT="part2">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part2.css">
+
+<LINK REL="next" HREF="node6.html">
+<LINK REL="previous" HREF="node4.html">
+<LINK REL="up" HREF="node1.html">
+<LINK REL="next" HREF="node6.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html94"
+  HREF="node6.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html92"
+  HREF="node1.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html86"
+  HREF="node4.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html95"
+  HREF="node6.html">Host-state area</A>
+<B> Up:</B> <A NAME="tex2html93"
+  HREF="node1.html">VMCSの構造</A>
+<B> Previous:</B> <A NAME="tex2html87"
+  HREF="node4.html">VMCS data</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00014000000000000000">
+Guest-state area</A>
+</H2>
+VMExit 時にゲストのレジスタを退避し、VMEntry 時に復帰するための領域です。次のレジスタが保存の対象：
+
+<P>
+CR0, CR3, CR4, DR7, RSP, RIP, RFLAGS, CS, SS, DS, ES, FS, GS, LDTR, TR, GDTR, SMBASE
+
+<P>
+また、以下のMSRレジスタが保存の対象：
+
+<P>
+IA32_DEBUGCTL, IA32_SYSENTER_CS, IA32_SYSENTER_ESP, IA32_SYSENTER_EIP,IA32_PERF_GLOBAL_CTRL, IA32_PAT, IA32_EFER
+
+<P>
+さらに、レジスタ以外のステートとして、仮想CPU の状態・各セグメントの状態や属性・割り込みブロック状態の有無・VMX プリエンプションタイマのカウンタ・EPT のPTE アドレス等の情報も記録されている。
+
+<P>
+ここで保存の対象になっていないレジスタについてはハイパーバイザが退避と復帰を行う必要がある
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

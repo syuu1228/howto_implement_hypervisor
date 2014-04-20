@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>VPID</TITLE>
+<META NAME="description" CONTENT="VPID">
+<META NAME="keywords" CONTENT="part2">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part2.css">
+
+<LINK REL="next" HREF="node22.html">
+<LINK REL="previous" HREF="node20.html">
+<LINK REL="up" HREF="part2.html">
+<LINK REL="next" HREF="node22.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html253"
+  HREF="node22.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html251"
+  HREF="part2.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html245"
+  HREF="node20.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html254"
+  HREF="node22.html">まとめ</A>
+<B> Up:</B> <A NAME="tex2html252"
+  HREF="part2.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel VT-xの概要とメモリ仮想化</A>
+<B> Previous:</B> <A NAME="tex2html246"
+  HREF="node20.html">EPT</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00070000000000000000">
+VPID</A>
+</H1>
+直接EPTに関連する機能ではありませんが、メモリに関連するハードウェア仮想化支援機能でEPTとともにNehalem以降のIntelのCPUへ導入された「VPID（Virtual Processor Identifier）」を解説します。
+
+<P>
+アドレス変換を高速化するため、CPUにはページテーブルエントリをキャッシュするTLBという機構が搭載されています。これは、仮想アドレスと物理アドレスのペアを記憶する連想メモリ（CAM）であり、少数の頻繁にアクセスされる領域をキャッシュします。
+
+<P>
+また、ページテーブルエントリが書き換えられた時やページテーブルが切り替えられた時に「フラッシュ」操作を行い、エントリを削除してページテーブルとの整合性を保ちます。
+
+<P>
+ゲストマシンをVMExitしてホストOSでプロセスを実行したり、別のゲストマシンを実行する時、TLBをフラッシュしないと仮想アドレスのアドレス解決が誤動作を起こします。このため、初期のVT-x対応CPUではVMEntry時／VMExit時にTLBをすべてフラッシュする必要がありました。
+
+<P>
+Nehalem以降のIntelのCPUでは、これを防いでパフォーマンスを向上させる機能としてVPIDが導入されました。VPIDを有効にするには、VMCSのVM Execution control fieldにあるVPIDフィールドにそのゲストマシンのユニークなIDを設定します。
+
+<P>
+VPID有効時には、VMEntry時／VMExit時にINVVPID命令により直前に実行していたゲストマシンのエントリのみTLBからフラッシュできるようになります。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

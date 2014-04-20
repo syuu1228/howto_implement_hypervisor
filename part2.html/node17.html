@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>ページングとメモリの仮想化</TITLE>
+<META NAME="description" CONTENT="ページングとメモリの仮想化">
+<META NAME="keywords" CONTENT="part2">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part2.css">
+
+<LINK REL="previous" HREF="node16.html">
+<LINK REL="up" HREF="node13.html">
+<LINK REL="next" HREF="node18.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html213"
+  HREF="node18.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html211"
+  HREF="node13.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html207"
+  HREF="node16.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html214"
+  HREF="node18.html">x86アーキテクチャにおけるページング機構</A>
+<B> Up:</B> <A NAME="tex2html212"
+  HREF="node13.html">VT-x 拡張命令セット</A>
+<B> Previous:</B> <A NAME="tex2html208"
+  HREF="node16.html">ハイパーコール命令</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00034000000000000000">
+ページングとメモリの仮想化</A>
+</H2>
+マルチタスクをサポートする近代的なOSでは、プロセスごとに独立したメモリ空間を持ち、あるプロセスは別のプロセスのメモリ領域へアクセスできないようになっています。
+
+<P>
+これを実現するために、CPUに「仮想メモリ」をサポートする機構（MMU）が搭載されています((別の方式としてセグメント方式というものがあり、x86アーキテクチャはこの方式からページング方式へ移行してきたという歴史的事情があるため、今でもセグメント方式をサポートしています。))。
+
+<P>
+仮想メモリの実現方法として、現在では一般的に「ページング方式」がとられています。この方式では、プロセスごとの仮想メモリ空間を固定長（x86アーキテクチャでは一般的に4KB）に区切り、仮想ページと物理ページの割り当て情報を「ページテーブル」と呼ばれるメモリ上の表に記録します（図<A HREF="#fig2">2</A>）。
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig2"></A><A NAME="35"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 2:</STRONG>
+ページテーブル</CAPTION>
+<TR><TD><IMG
+ WIDTH="518" HEIGHT="345" ALIGN="BOTTOM" BORDER="0"
+ SRC="img2.png"
+ ALT="\includegraphics{figures/part2_fig2.eps}"></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+CPUからメモリへのアクセスがあった時、MMUはページテーブルを用いて仮想アドレスを物理アドレスへ変換し、適切な物理メモリアドレスへのアクセスを可能にします。
+
+<P>
+ページテーブル上の各ページに対するエントリには対応する物理ページの情報以外にも、アクセス権（読み／書き／実行）のような属性情報が存在します。
+
+<P>
+これによって特定のメモリ範囲に対してアクセス制御を行うようなことができます。
+
+<P>
+また、アクセスの少ない物理ページをディスクへ書き出しページテーブル上の割り当て情報を解除（ページアウト）します。そして後にアクセスが起こったときにディスクから読み込んでページテーブル上の割り当て情報を再設定（ページイン）することで、物理メモリ容量よりも大きな仮想メモリを扱うことができるようになります。
+
+<P>
+仮想化されたシステムにおいて、CPU上でそのままゲストOSを実行する時、このページング機構を仮想化する必要が生じます。これは、ゲストOS上のプロセスに割り当てられた仮想ページの参照先である物理ページのアドレスが指しているのはハイパーバイザがゲスト環境へ割り付けたメモリ領域内のアドレスであり、ハイパーバイザが管理する物理メモリ空間上のアドレスではないからです。
+
+<P>
+たとえば、仮想マシンAへ1から4まで、仮想マシンBへ5から8までの物理ページを割り当てたとします。それぞれの仮想マシン上の物理ページ1へアクセスが行われる時、実際には仮想マシンAからであれば物理ページ1へ、仮想マシンBからであれば物理ページ5へアクセスが行われなければなりません（図<A HREF="#fig3">3</A>）。
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig3"></A><A NAME="41"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 3:</STRONG>
+メモリの仮想化による問題</CAPTION>
+<TR><TD><IMG
+ WIDTH="724" HEIGHT="567" ALIGN="BOTTOM" BORDER="0"
+ SRC="img3.png"
+ ALT="\includegraphics{figures/part2_fig3.eps}"></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+この問題を解決するメモリ仮想化の手法として、ソフトウェアによる「シャドーページング」、ハードウェアによる「EPT」の2つを紹介します。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>x86アーキテクチャにおけるページング機構</TITLE>
+<META NAME="description" CONTENT="x86アーキテクチャにおけるページング機構">
+<META NAME="keywords" CONTENT="part2">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part2.css">
+
+<LINK REL="next" HREF="node19.html">
+<LINK REL="previous" HREF="node13.html">
+<LINK REL="up" HREF="part2.html">
+<LINK REL="next" HREF="node19.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html223"
+  HREF="node19.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html221"
+  HREF="part2.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html215"
+  HREF="node17.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html224"
+  HREF="node19.html">シャドーページング</A>
+<B> Up:</B> <A NAME="tex2html222"
+  HREF="part2.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel VT-xの概要とメモリ仮想化</A>
+<B> Previous:</B> <A NAME="tex2html216"
+  HREF="node17.html">ページングとメモリの仮想化</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00040000000000000000">
+x86アーキテクチャにおけるページング機構</A>
+</H1>
+まず、x86アーキテクチャにおけるページング機構について、簡単におさらいしましょう。x86アーキテクチャでは1ページのサイズは4KBであるため、32bitモードでのページ総数は1,048,576ページとなります。このページテーブルを単純な2次元の表として表すと消費メモリ量が大きくなってしまいます。
+
+<P>
+そこで、x86アーキテクチャではページディレクトリテーブルという概念を導入しました。これにより、少ないサイズでページテーブルを表現しています。1 つのページテーブルは1024エントリとし、1つのページテーブルに4MBの仮想メモリ空間の情報を持たせます。
+
+<P>
+ページディレクトリテーブルは、このページテーブルのアドレス情報を格納します。ページディレクトリテーブルは1024 エントリあり、4GBの仮想メモリ空間全体を表現しています（図<A HREF="#fig4">4</A>）。
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig4"></A><A NAME="48"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 4:</STRONG>
+仮想メモリ空間のページング2段構成</CAPTION>
+<TR><TD><IMG
+ WIDTH="654" HEIGHT="470" ALIGN="BOTTOM" BORDER="0"
+ SRC="img4.png"
+ ALT="\includegraphics{figures/part2_fig4.eps}"></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+64bitモードの場合は8バイトのページテーブルエントリがテーブル当たり512エントリとなり、さらにページディレクトリポインタテーブルとページマップレベル4テーブルの2段が追加されて256TBの仮想メモリ空間をサポートしています<A NAME="tex2html5"
+  HREF="footnode.html#foot51"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A>（図<A HREF="#fig5">5</A>）。
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig5"></A><A NAME="55"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 5:</STRONG>
+64bitモードの仮想メモリ空間</CAPTION>
+<TR><TD><IMG
+ WIDTH="542" HEIGHT="285" ALIGN="BOTTOM" BORDER="0"
+ SRC="img5.png"
+ ALT="\includegraphics[width=1.0\textwidth]{figures/part2_fig5.eps}"></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+複数段にするだけではページテーブルの総エントリ数は変わりません。しかし、未使用の仮想メモリ空間も発生するため、必要な仮想メモリ空間に対してのみページテーブルを作成すれば、その分消費メモリを抑えることができます。
+
+<P>
+ページディレクトリテーブルのアドレスをCPUにセットするためのレジスタとしてCR3レジスタが用意されています。MMUは仮想メモリ空間へのアクセスに対してCR3レジスタに書かれたページディレクトリテーブルのアドレスへアクセスして探索を行います。探索を行う時、仮想アドレスの先頭10ビットをページディレクトリテーブルへのオフセットとしてページテーブルを指すエントリを探索します。
+
+<P>
+ページテーブルでは仮想アドレスの11～20ビットをオフセットとして物理ページを指すエントリを探索します。見つかった物理ページのアドレスに対して仮想アドレスの残り12ビットの値を足したアドレスが、CPUがアクセスしようとしている物理アドレスとなります。
+
+<P>
+ページディレクトリテーブル／ページテーブルの各エントリにはページテーブル／物理ページのアドレスだけでなく、いくつかの属性情報が含まれます。
+
+<P>
+次にその詳細を示します。
+
+<P>
+
+<UL>
+<LI>プレゼントビット……1なら物理メモリ上に存在、0ならページフォルト例外
+</LI>
+<LI>リードライトビット……0の時に書き込みが実行されたらページフォルト例外
+</LI>
+<LI>ユーザスーパーバイザービット……0ならRing3からアクセス禁止
+</LI>
+<LI>ページライトスルービット……0ならライトスルー、1ならライトバック
+</LI>
+<LI>ページキャッシュディスエーブルビット……1ならキャッシュ禁止
+</LI>
+<LI>アクセスビット……ページにアクセスした時にCPUが1にする
+</LI>
+<LI>ダーティービット……ページに書き込んだ時にCPUが1にする
+</LI>
+<LI>PATビット……ページでPATを有効にする
+</LI>
+<LI>グローバルビット……1ならグローバルなページ、TLBの挙動に影響する
+</LI>
+<LI>ベースアドレス（20ビット）……ページディレクトリテーブルの場合はページテーブルのアドレス、ページテーブルの場合は物理ページのアドレス
+</LI>
+</UL>
+
+<P>
+64bitモードの場合は、ベースアドレス長を拡張するためにページテーブルエントリが64bitへ拡張されます。たとえば、物理メモリの空き容量が低下した等の理由でページアウトを行う時は、物理ページをディスクへ書き出した後、プレゼントビットを0に設定します。ページアウトされた仮想ページへCPUがアクセスした場合、ページフォルト例外が発生します。ページフォルト例外のハンドラは、ディスクからページアウトされたページをメモリへロードし、ページテーブルのエントリへ新しい物理ページのベースアドレスを書き込み、プレゼントビットを有効にします。
+
+<P>
+他には、カーネルモードとユーザモードでページテーブルを共有する場合、カーネルの領域をユーザスーパーバイザービット＝0にしておき、ユーザの領域をユーザスーパーバイザービット＝1にしておくという使い方をすることで、ユーザモードプログラムからカーネルのメモリ領域へアクセスされることを防ぎつつページテーブルの共有を可能にすることができます。ページングについてのより詳細な情報を得るには、[<A
+ HREF="node25.html#SDM">1</A>]のChapter 4. Pagingを参照してください。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>
