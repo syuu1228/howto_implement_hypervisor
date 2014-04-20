@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  20 APR 2014 09:48
+This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  20 APR 2014 10:24
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -144,7 +144,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.141 \lthtmlpictureA{tex2html_wrap279}
+l.141 \lthtmlpictureA{tex2html_wrap288}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -152,7 +152,7 @@ or  <return>  to continue without it.
 
 File: figures/part1_fig1.eps Graphic file (type eps)
 <figures/part1_fig1.eps>
-l2hSize :tex2html_wrap279:193.72374pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap288:193.72374pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -231,7 +231,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.151 \lthtmlpictureA{tex2html_wrap290}
+l.151 \lthtmlpictureA{tex2html_wrap299}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -239,7 +239,7 @@ or  <return>  to continue without it.
 
 File: figures/part1_fig2.eps Graphic file (type eps)
 <figures/part1_fig2.eps>
-l2hSize :tex2html_wrap290:175.65625pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap299:175.65625pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -266,7 +266,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.157 \lthtmlpictureA{tex2html_wrap294}
+l.157 \lthtmlpictureA{tex2html_wrap303}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -274,7 +274,7 @@ or  <return>  to continue without it.
 
 File: figures/part1_fig3.eps Graphic file (type eps)
 <figures/part1_fig3.eps>
-l2hSize :tex2html_wrap294:175.65625pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap303:175.65625pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -314,7 +314,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.164 \lthtmlpictureA{tex2html_wrap311}
+l.164 \lthtmlpictureA{tex2html_wrap320}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -322,7 +322,7 @@ or  <return>  to continue without it.
 
 File: figures/part1_fig4.eps Graphic file (type eps)
 <figures/part1_fig4.eps>
-l2hSize :tex2html_wrap311:261.97874pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap320:261.97874pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -349,6 +349,19 @@ Type  H <return>  for immediate help.
  ...                                              
                                                   
 l.169 \stepcounter{section}
+                           
+Your command was ignored.
+Type  I <command> <return>  to replace it with another command,
+or  <return>  to continue without it.
+
+
+! LaTeX Error: No counter 'section' defined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.170 \stepcounter{section}
                            
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
