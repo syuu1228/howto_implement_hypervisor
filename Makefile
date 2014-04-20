@@ -1,14 +1,15 @@
-all:
-	platex part1.tex
-	platex part1.tex
-	dvipdfmx part1.dvi
+.PHONY: all clean
 
-	platex part3.tex
-	platex part3.tex
-	dvipdfmx part3.dvi
-
-	latex2html part1.tex
-	latex2html part3.tex
+all: part1.pdf part1.html part2.pdf part2.html part3.pdf part3.html
 
 clean:
-	rm -rf *.aux *.dvi *.log *.pdf part1/
+	rm -rf *.aux *.dvi *.log *.pdf *.html
+
+%.pdf: %.dvi
+	dvipdfmx $<
+
+%.dvi: %.tex
+	platex $<
+
+%.html: %.tex
+	latex2html -mkdir -dir $@ $<

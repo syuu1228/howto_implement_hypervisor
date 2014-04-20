@@ -10,6 +10,7 @@ Software Design誌の連載「ハイパーバイザの作り方」の原稿公�
 
 # TeXビルド方法
 - texliveベースのplatex環境をセットアップしてmakeコマンドを実行（※新しいtexを追加した場合はMakefileにも追加して下さい）。
+- TeXのフォーマットに関しては[こちら](format.md)を参考
 
 # コントリビューション方法
 - このgitリポジトリをforkしてファイルを変更、commit & pushしてpull requestを送って下さい。

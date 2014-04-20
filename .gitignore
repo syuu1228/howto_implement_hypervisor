@@ -2,4 +2,4 @@
 *.dvi
 *.log
 *.pdf
-part1/
+part*/
