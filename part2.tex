@@ -1,5 +1,4 @@
-\documentclass[a4j,12pt]{jarticle}
-\usepackage[dvips]{graphicx}
+\input{preamble}
 \title{ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel VT-xの概要とメモリ仮想化}
 \author{Takuya ASADA syuu@dokukino.com}
 \begin{document}
@@ -8,7 +7,7 @@
 \section{VMCSの構造}
 それでは、前回のハイパーバイザのライフサイクルの説明でも度々紹介したハイパーバイザ側のコンフィグレーション情報であるVMCS（Virtual Machine Control Structure）の内部構造（図\ref{fig1}）を以下に説明します。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part2_fig1.eps}
 \caption{VMCSの内部構造}
 \label{fig1}
@@ -114,7 +113,7 @@ VMCS内のデータは普通のメモリアクセス命令で読み書きする�
 
 仮想メモリの実現方法として、現在では一般的に「ページング方式」がとられています。この方式では、プロセスごとの仮想メモリ空間を固定長（x86アーキテクチャでは一般的に4KB）に区切り、仮想ページと物理ページの割り当て情報を「ページテーブル」と呼ばれるメモリ上の表に記録します（図\ref{fig2}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part2_fig2.eps}
 \caption{ページテーブル}
 \label{fig2}
@@ -132,7 +131,7 @@ CPUからメモリへのアクセスがあった時、MMUはページテーブ�
 
 たとえば、仮想マシンAへ1から4まで、仮想マシンBへ5から8までの物理ページを割り当てたとします。それぞれの仮想マシン上の物理ページ1へアクセスが行われる時、実際には仮想マシンAからであれば物理ページ1へ、仮想マシンBからであれば物理ページ5へアクセスが行われなければなりません（図\ref{fig3}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part2_fig3.eps}
 \caption{メモリの仮想化による問題}
 \label{fig3}
@@ -147,7 +146,7 @@ CPUからメモリへのアクセスがあった時、MMUはページテーブ�
 
 ページディレクトリテーブルは、このページテーブルのアドレス情報を格納します。ページディレクトリテーブルは1024 エントリあり、4GBの仮想メモリ空間全体を表現しています（図\ref{fig4}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part2_fig4.eps}
 \caption{仮想メモリ空間のページング2段構成}
 \label{fig4}
@@ -155,7 +154,7 @@ CPUからメモリへのアクセスがあった時、MMUはページテーブ�
 
 64bitモードの場合は8バイトのページテーブルエントリがテーブル当たり512エントリとなり、さらにページディレクトリポインタテーブルとページマップレベル4テーブルの2段が追加されて256TBの仮想メモリ空間をサポートしています\footnote{32bit PAEモードの場合も64bitモードのように段数が追加されて仮想メモリ空間が拡張されますが、ここでは解説を省略します。}（図\ref{fig5}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics[width=1.0\textwidth]{figures/part2_fig5.eps}
 \caption{64bitモードの仮想メモリ空間}
 \label{fig5}
@@ -191,7 +190,7 @@ CPUからメモリへのアクセスがあった時、MMUはページテーブ�
 \section{シャドーページング}
 ゲストOSが各プロセスに対して作成したページテーブルとページディレクトリテーブルをそのまま実際のCPUのCR3レジスタに設定すると、現実の物理メモリ空間が参照されてしまいます。これではハイパーバイザが意図しないメモリ領域を参照することになってしまいます。これを防ぐため、ハイパーバイザはゲストのページディレクトリテーブルとページテーブルを複製し、ハイパーバイザがゲストマシンに割り当てたメモリ範囲を反映した物理ページ番号をページテーブルの各エントリに書き込み、CPUのCR3レジスタに複製したページディレクトリテーブルを書き込みます（図\ref{fig6}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics{figures/part2_fig6.eps}
 \caption{シャドーページング}
 \label{fig6}
@@ -204,7 +203,7 @@ Nehalem以降のIntelのCPUでは、メモリ仮想化をCPUで支援する機�
 
 これにより、ゲストマシンから仮想メモリ空間への参照が行われた時に、CR3にセットされたページテーブルでゲスト物理アドレスへの変換が行われます。さらにEPTPにセットされたページテーブルでゲスト物理アドレスからホスト物理アドレスへの変換が行われます（図\ref{fig7}）。
 
-\begin{figure}
+\begin{figure}\centering
 \includegraphics[width=1.0\textwidth]{figures/part2_fig7.eps}
 \caption{ゲスト物理アドレスからホスト物理アドレスへの変換}
 \label{fig7}
@@ -240,7 +239,7 @@ Copyright (c) 2014 Takuya ASADA.
 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。
 
 \begin{thebibliography}{4}
-  \bibitem{SDM} Intel(R) 64 and IA-32 Architectures Software Developer Manuals http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html/
+  \bibitem{SDM} Intel(R) 64 and IA-32 Architectures Software Developer Manuals \url{http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html/}
 \end{thebibliography}
 
 \end{document}
