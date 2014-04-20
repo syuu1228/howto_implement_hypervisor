@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-all: part1.pdf part1.html part2.pdf part2.html
+all: part1.pdf part1.html part2.pdf part2.html part3.pdf part3.html
 
 clean:
 	rm -rf *.aux *.dvi *.log *.pdf *.html
