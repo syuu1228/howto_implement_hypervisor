@@ -1,5 +1,4 @@
-\documentclass[a4j,12pt]{jarticle}
-\usepackage[dvips]{graphicx}
+\input{preamble}
 \title{第 3 回 I/O 仮想化「デバイス I/O 編」}
 \author{Takuya ASADA syuu@dokukino.com}
 \begin{document}
@@ -40,7 +39,7 @@
 
 \subsection{シリアルポートの受信処理}
 
-\begin{figure}
+\begin{figure}\centering
 \begin{verbatim}
 
 unsigned char read_com1(void) {
@@ -95,7 +94,7 @@ Status Registerのチェック処理をビジーウェイトで
 read\_reg\_byte()関数及びレジスタの宣言はリスト2
 のようになります。
 
-\begin{figure}
+\begin{figure}\centering
 \begin{verbatim}
 
 #define COM1_PORT (0x3f8)
@@ -120,8 +119,7 @@ unsigned char read_reg_byte(unsigned short port) {
 理のread\_reg\_byte()関数及びレジスタの宣言はリス
 ト3のようになります。
 
-\begin{figure}
-
+\begin{figure}\centering
 \begin{verbatim}
 
 #define COM1_PORT (0x40100000)
@@ -183,13 +181,10 @@ I/O-Bitmap Address BにI/O-bitmap AとI/O-bitmap
 Bのアドレスを設定します。 I/O-bitmap BはI/Oポー
 ト番号8000HからFFFFHまでを表す同様のテーブルです(図\ref{fig1})。
 
-\begin{figure}
-
+\begin{figure}\centering
 \includegraphics{figures/part3_fig1_IO_bitmaps.eps}
-
 \caption{I/O-bitmap と I/O アドレス空間}
 \label{fig1}
-
 \end{figure}
 
  これらの設定でI/Oアクセス時のVMExitを有効に
