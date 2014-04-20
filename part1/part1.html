@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１回 x86アーキテクチャにおける仮想化の歴史とIntel VT-x</TITLE>
+<META NAME="description" CONTENT="ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１回 x86アーキテクチャにおける仮想化の歴史とIntel VT-x">
+<META NAME="keywords" CONTENT="part1">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part1.css">
+
+<LINK REL="next" HREF="node1.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html9"
+  HREF="node1.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up_g.png"> 
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev_g.png">   
+<BR>
+<B> Next:</B> <A NAME="tex2html10"
+  HREF="node1.html">はじめに</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+<H1 ALIGN="CENTER">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１回 x86アーキテクチャにおける仮想化の歴史とIntel VT-x</H1>
+<DIV>
+
+<P ALIGN="CENTER"><STRONG>Takuya ASADA syuu@dokukino.com</STRONG></P>
+</DIV>
+
+<P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"></A>
+
+<UL>
+<LI><A NAME="tex2html11"
+  HREF="node1.html">はじめに</A>
+<LI><A NAME="tex2html12"
+  HREF="node2.html">x86アーキテクチャにおける仮想化の歴史と仮想化手法</A>
+<LI><A NAME="tex2html13"
+  HREF="node3.html">VMwareでの実装</A>
+<LI><A NAME="tex2html14"
+  HREF="node4.html">Xenでの実装</A>
+<LI><A NAME="tex2html15"
+  HREF="node5.html">仮想化技術の普及</A>
+<LI><A NAME="tex2html16"
+  HREF="node6.html">Intel VT-x の概要</A>
+<LI><A NAME="tex2html17"
+  HREF="node7.html">VT-xを用いたハイパーバイザのライフサイクル</A>
+<UL>
+<LI><A NAME="tex2html18"
+  HREF="node8.html">(1)「VT-xを有効化」</A>
+<LI><A NAME="tex2html19"
+  HREF="node9.html">(2)「VMCSを初期化、ゲストマシンの設定をロード」</A>
+<LI><A NAME="tex2html20"
+  HREF="node10.html">(3)「CPUにVMCSをセット」</A>
+<LI><A NAME="tex2html21"
+  HREF="node11.html">(4)「ハイパーバイザのレジスタを退避」</A>
+<LI><A NAME="tex2html22"
+  HREF="node12.html">(5)「ゲストのレジスタを復帰」</A>
+<LI><A NAME="tex2html23"
+  HREF="node13.html">(6)「VMX non Root ModeへVMEntry」</A>
+<LI><A NAME="tex2html24"
+  HREF="node14.html">(7)「ゲストマシン実行」</A>
+<LI><A NAME="tex2html25"
+  HREF="node15.html">(8)「何らかのトラップ要因が発生、VMExitする」</A>
+<LI><A NAME="tex2html26"
+  HREF="node16.html">(9)「ゲストのレジスタを退避」</A>
+<LI><A NAME="tex2html27"
+  HREF="node17.html">(10)「ハイパーバイザのレジスタを復帰」</A>
+<LI><A NAME="tex2html28"
+  HREF="node18.html">(11)「VMExit要因を調べ、要因に合わせたエミュレーション処理を行う」</A>
+<LI><A NAME="tex2html29"
+  HREF="node19.html">(12)「(3)に戻る」</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html30"
+  HREF="node20.html">まとめ</A>
+<LI><A NAME="tex2html31"
+  HREF="node21.html">Bibliography</A>
+<LI><A NAME="tex2html32"
+  HREF="node22.html">About this document ...</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>

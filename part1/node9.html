@@ -1,0 +1,68 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>(2)「VMCSを初期化、ゲストマシンの設定をロード」</TITLE>
+<META NAME="description" CONTENT="(2)「VMCSを初期化、ゲストマシンの設定をロード」">
+<META NAME="keywords" CONTENT="part1">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part1.css">
+
+<LINK REL="next" HREF="node10.html">
+<LINK REL="previous" HREF="node8.html">
+<LINK REL="up" HREF="node7.html">
+<LINK REL="next" HREF="node10.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html133"
+  HREF="node10.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html131"
+  HREF="node7.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html125"
+  HREF="node8.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html134"
+  HREF="node10.html">(3)「CPUにVMCSをセット」</A>
+<B> Up:</B> <A NAME="tex2html132"
+  HREF="node7.html">VT-xを用いたハイパーバイザのライフサイクル</A>
+<B> Previous:</B> <A NAME="tex2html126"
+  HREF="node8.html">(1)「VT-xを有効化」</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00072000000000000000">
+(2)「VMCSを初期化、ゲストマシンの設定をロード」</A>
+</H2>
+ゲストマシンを実行する為には、前述したVMCSがゲストマシンのCPU((通常、仮想CPU(vCPU)と呼ばれます))1つに対して1つ用意され、適切に初期化されていなければなりません。このVMCSはメインメモリ上の4KBの領域でページ境界（4KB）でアラインされている必要があります。メモリ上の領域なので直接読み書きできるのですが、VMCSの内部構造は公開しておらず、専用の命令を介して間接的にアクセスすることになっています。
+
+<P>
+ここでは、VMCSのアドレスをCPUへ設定する為にVMPTRLD命令を実行し、続いてVMCS上のフィールドへ書き込みを行う為にVMWRITE命令を実行します。ここで初期化する情報としては、ゲストレジスタの初期値やVMX non-root modeの挙動の制御などがあります。
+詳しくは次号でこの「VMCSの構造」を解説しますので、しばしお待ち（ご期待）ください。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-20
+</ADDRESS>
+</BODY>
+</HTML>
