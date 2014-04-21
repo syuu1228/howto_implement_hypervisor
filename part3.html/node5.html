@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>VT-x における I/O エミュレーションの基本的な考え方</TITLE>
+<META NAME="description" CONTENT="VT-x における I/O エミュレーションの基本的な考え方">
+<META NAME="keywords" CONTENT="part3">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part3.css">
+
+<LINK REL="next" HREF="node6.html">
+<LINK REL="previous" HREF="node4.html">
+<LINK REL="up" HREF="part3.html">
+<LINK REL="next" HREF="node6.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html73"
+  HREF="node6.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html71"
+  HREF="part3.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html65"
+  HREF="node4.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html74"
+  HREF="node6.html">VT-x における I/O マップド</A>
+<B> Up:</B> <A NAME="tex2html72"
+  HREF="part3.html">第 3 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html66"
+  HREF="node4.html">I/O マップド I/O とメモリマップド</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00040000000000000000">
+VT-x における I/O エミュレーションの基本的な考え方</A>
+</H1>
+
+<P>
+連載1回目の「VT-xを用いたハイパーバイザのラ
+イフサイクル」で解説したとおり、次のようなループ
+の繰り返しによりデバイスI/Oのエミュレーション
+を行います。
+
+<P>
+
+<OL>
+<LI>[ゲスト]ゲスト環境上でデバイスへのI/Oが実行される
+</LI>
+<LI>[ゲスト]I/Oの実行を契機にVMExit発生
+</LI>
+<LI>[ハイパーバイザ]アクセス先のデバイス、アクセス幅、アクセス方向、書き込み先・読み込み元などを特定
+</LI>
+<LI>[ハイパーバイザ]デバイスI/Oのエミュレーション処理を行う
+</LI>
+<LI>[ハイパーバイザ]VMEnter してゲストを再開させる
+</LI>
+<LI>[ゲスト]I/O実行の次の命令から実行再開
+</LI>
+</OL>
+
+<P>
+この処理は、ハードウェアレジスタへの読み書き
+が行われるごとに繰り返されます。したがって、1回
+のハードウェアアクセス処理に必要なハードウェア
+レジスタへのアクセス回数が多ければ多いほどオー
+バーヘッドが大きくなります。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>

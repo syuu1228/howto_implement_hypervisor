@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>VT-x における I/O マップド I/O のハンドリング方法</TITLE>
+<META NAME="description" CONTENT="VT-x における I/O マップド I/O のハンドリング方法">
+<META NAME="keywords" CONTENT="part3">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part3.css">
+
+<LINK REL="next" HREF="node7.html">
+<LINK REL="previous" HREF="node5.html">
+<LINK REL="up" HREF="part3.html">
+<LINK REL="next" HREF="node7.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html83"
+  HREF="node7.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html81"
+  HREF="part3.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html75"
+  HREF="node5.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html84"
+  HREF="node7.html">VT-x におけるメモリマップド I/O のハンドリング方法(シャドーページングの場合)</A>
+<B> Up:</B> <A NAME="tex2html82"
+  HREF="part3.html">第 3 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html76"
+  HREF="node5.html">VT-x における I/O エミュレーションの基本的な考え方</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00050000000000000000">
+VT-x における I/O マップド I/O のハンドリング方法</A>
+</H1>
+
+<P>
+VT-xにおいてI/OマップドI/Oをハンドリングす
+るには、まずVMCSへ設定を行ってI/Oポートへの
+アクセス時にVMExitを発生させる必要があります
+(VMCSについては、連載1回目と2回目を参照して
+ください)。
+ 設定には2とおりあり、すべてのI/Oポートへの
+アクセスでVMExitを発生させる設定と、特定のI/O
+ポートへのアクセスにのみVMExitを発生させる設
+定です。すべてのI/OポートへのアクセスでVMExit
+を発生させるには、VMCSのVM-Execution Control
+FieldsのUnconditional I/O exitingを1にします。ま
+た、特定のI/OポートへのアクセスにだけVMExit
+を発生させるには、VMCSのVM-Execution Control
+FieldsのUse I/O bitmapsを1にして、VM-Execution
+Control Fields の I/O-Bitmap Address A と
+I/O-Bitmap Address BにI/O-bitmap AとI/O-bitmap
+Bのアドレスを設定します。 I/O-bitmap BはI/Oポー
+ト番号8000HからFFFFHまでを表す同様のテーブルです(図<A HREF="#fig1">1</A>)。
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig1"></A><A NAME="44"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 1:</STRONG>
+I/O-bitmap と I/O アドレス空間</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER"><IMG
+ WIDTH="555" HEIGHT="302" ALIGN="BOTTOM" BORDER="0"
+ SRC="img4.png"
+ ALT="\includegraphics{figures/part3_fig1_IO_bitmaps.eps}">
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+これらの設定でI/Oアクセス時のVMExitを有効に
+し、ゲストOSがデバイスドライバ経由でI/Oポート
+へアクセスを行うと、VMExit Reason 30 (I/O
+Instruction)のVMExitが発生します。Exit要因は
+VMCSのVM-Exit Information FieldsのExit reason
+フィールドに書かれており、ハイパーバイザはこれ
+をもとにExit要因に合わせた処理を行います。
+ 今回の例の場合はデバイスへのI/Oアクセスをエ
+ミュレーションしますが、 Exit要因だけでは何番のI/
+Oポートへアクセスされているのか、アクセス方向
+が読み込みだったのか、あるいは書き込みだったの
+かがわかりません。これらの情報は、VM-Exit
+Information FieldsのExit qualificationフィールドで
+提供されます(表<A HREF="#tab1">1</A>)。
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="52"></A>
+<TABLE>
+<CAPTION><STRONG>Table 1:</STRONG>
+Exit Reason 30 のときの Exit qualification</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER"><TABLE CELLPADDING=3 BORDER="1">
+<TR><TD ALIGN="LEFT">ビットポジション</TD>
+<TD ALIGN="LEFT">内容</TD>
+</TR>
+<TR><TD ALIGN="LEFT">2:00</TD>
+<TD ALIGN="LEFT">アクセスサイズ(0 = 1byte、1 = 2byte、3 = 4byte)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">3</TD>
+<TD ALIGN="LEFT">アクセス方向(0 = 書き込み、1 = 読み取り)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">4</TD>
+<TD ALIGN="LEFT">String 命令(0 = 非 string、1 = string)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">5</TD>
+<TD ALIGN="LEFT">REP プレフィックス(0 = REP あり、1 = REP)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">6</TD>
+<TD ALIGN="LEFT">ポート番号指定方法(0 = DX 間接、1 = 即値)</TD>
+</TR>
+<TR><TD ALIGN="LEFT">15:07</TD>
+<TD ALIGN="LEFT">Reserved</TD>
+</TR>
+<TR><TD ALIGN="LEFT">31:16:00</TD>
+<TD ALIGN="LEFT">ポート番号</TD>
+</TR>
+<TR><TD ALIGN="LEFT">63:32:00</TD>
+<TD ALIGN="LEFT">Reserved</TD>
+</TR>
+</TABLE>
+
+<A NAME="tab1"></A></DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+ 
+ このフィールドはExit要因ごとに異なる追加情報
+を提供しており、VMExit Reason 48の場合は表<A HREF="node8.html#tab3">3</A>の
+ような情報を提供します。ハイパーバイザはExit
+qualificationフィールドからポート番号などの情報を
+読み込み、ポート番号に合わせたデバイスエミュ
+レーション処理を実行します。デバイスエミュレー
+ション処理を行う際、アクセス方向が読み込み方向
+ならば読んだデータの書き込み先、書き込み方向な
+らば書き込むデータの読み込み元を把握する必要が
+あります。しかし、I/Oポートアクセスの場合は非
+string命令(IN/OUT)ならばEAXレジスタを使うこ
+と、string命令(INS/INSB/INSW/INSD/OUTS/
+OUTSB/OUTSW/OUTSD)ならばES:ESIで指定さ
+れたメモリアドレスを使うこと、と固定的に決めら
+れています。このため、Exit qualificationのビット4
+を見てstring命令か否かを判別すれば、ハイパーバ
+イザのエミュレーション処理において、どこから書
+き込み先/読み込み元を取得すれば良いのかがわか
+ります。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>

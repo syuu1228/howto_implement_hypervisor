@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>シリアルポートの受信処理</TITLE>
+<META NAME="description" CONTENT="シリアルポートの受信処理">
+<META NAME="keywords" CONTENT="part3">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part3.css">
+
+<LINK REL="previous" HREF="node2.html">
+<LINK REL="up" HREF="node2.html">
+<LINK REL="next" HREF="node4.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html53"
+  HREF="node4.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html51"
+  HREF="node2.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html47"
+  HREF="node2.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html54"
+  HREF="node4.html">I/O マップド I/O とメモリマップド</A>
+<B> Up:</B> <A NAME="tex2html52"
+  HREF="node2.html">I/O デバイスへのアクセスとハードウェアレジスタ</A>
+<B> Previous:</B> <A NAME="tex2html48"
+  HREF="node2.html">I/O デバイスへのアクセスとハードウェアレジスタ</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00021000000000000000">
+シリアルポートの受信処理</A>
+</H2>
+
+<P>
+<BR>
+<IMG
+ WIDTH="374" HEIGHT="74" ALIGN="BOTTOM" BORDER="0"
+ SRC="img1.png"
+ ALT="\begin{program}
+% latex2html id marker 15
+\centering
+\begin{verbatim}unsigned ...
+...R);
+}\end{verbatim}
+\caption{シリアルポートの受信処理}
+\end{program}">
+<BR>
+
+<P>
+リスト 1 は、最も単純に実装した場合のシリアル
+ポートの受信処理のコードです。解説を単純化する
+ため、初期化処理や割り込みの処理などは割愛して
+います。シリアルポートからデータを受信するに
+は、Line Status RegisterのData Availableビットを
+チェックしてデータが着信するまで待ちます。そし
+て、データが着信したら Receiver Buffer Register
+から読み取ります。
+ 複数バイトのデータを読み出すには、バイト数分
+この処理を繰り返す必要があります。ここではLine
+Status Registerのチェック処理をビジーウェイトで
+実装していますが、実際のドライバではビジーウェ
+イトはCPU時間を無駄に消費し、他の処理の実行を
+阻害するのでほとんどの場合使いません。代わりに
+割り込みを用います。シリアルポートの受信割り込
+みの場合、Data Availableビットが立つタイミングで
+割り込みを発生することができます。このため、ド
+ライバは割り込みハンドラでリスト1と同様のコー
+ドを実行すれば、ビジーウェイトを避けて受信処理
+を行うことができます。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>

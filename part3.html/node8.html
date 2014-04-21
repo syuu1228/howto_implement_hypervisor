@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>VT-x におけるメモリマップド I/Oのハンドリング方法( EPT の場合)</TITLE>
+<META NAME="description" CONTENT="VT-x におけるメモリマップド I/Oのハンドリング方法( EPT の場合)">
+<META NAME="keywords" CONTENT="part3">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part3.css">
+
+<LINK REL="next" HREF="node9.html">
+<LINK REL="previous" HREF="node7.html">
+<LINK REL="up" HREF="part3.html">
+<LINK REL="next" HREF="node9.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html103"
+  HREF="node9.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html101"
+  HREF="part3.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html95"
+  HREF="node7.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html104"
+  HREF="node9.html">Local APIC 仮想化</A>
+<B> Up:</B> <A NAME="tex2html102"
+  HREF="part3.html">第 3 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html96"
+  HREF="node7.html">VT-x におけるメモリマップド I/O のハンドリング方法(シャドーページングの場合)</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00070000000000000000">
+VT-x におけるメモリマップド I/Oのハンドリング方法( EPT の場合)</A>
+</H1>
+
+<P>
+EPT環境においてメモリマップドI/Oをハンドリ
+ングする場合は、デバイスがマップされたアドレス
+へのアクセスが発生した時に、VMExit reason 48
+(EPT violation)でVMExitさせる必要があります。
+そのために、EPT上のデバイスがマップされたアド
+レスに対応するページテーブルエントリのRead
+accessビットとWrite accessビットをどちらも0に
+します。これによってゲストマシンがデバイスが
+マップされたアドレスへアクセスした時にVMExit
+が発生するようになります。VMExitが発生したと
+き、ハイパーバイザはExit要因が48であることを確
+認したあと、 VMCSのVM-Exit Information Fieldsに
+あるGuest-physical addressを読み込みます。このア
+ドレスが、VMExit Reason 48を発生させたアクセス
+(デバイスへのI/O)になります。さらに、VM Exit
+qualificationフィールドを参照するとアクセス方向
+(readまたはwrite)を得ることができます。しかし、
+I/Oをエミュレーションするにはアクセスサイズ、
+データの書き込み先・読み込み元などの情報が足りま
+せん(表<A HREF="#tab3">3</A>)。
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="79"></A>
+<TABLE>
+<CAPTION><STRONG>Table 3:</STRONG>
+Exit Reason 48 のときの Exit qualification</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER"><TABLE CELLPADDING=3 BORDER="1">
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>ビットポジション</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>内容</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>0</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>EPT violation の原因は data read</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>1</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>EPT violation の原因は data write</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>2</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>EPT violation の原因は instruction fetch</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>3</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>アクセスされたページに対応するEPTエントリのread accessと、このExit qualificationの0 ビット目との AND</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>4</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>アクセスされたページに対応するEPTエントリのwrite accessと、このExit qualificationの1 ビット目との AND</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>5</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>アクセスされたページに対応するEPTエントリのexecute accessと、このExit qualificationの 2 ビット目との AND</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>6</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>Reserved</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>7</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>VMCS の VM-Exit Information Fields の Guest-linear address が有効</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>8</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>1 = EPT violation の原因がゲストフィジカルアドレスへのアクセス</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>0 = EPT violation の原因が EPT のページウォーク中や EPT のページテーブルエントリの更新</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>11:09</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>Reserved</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>12</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>IRET による NMI ブロック解除</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=91>63:13:00</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=369>Reserved</TD>
+</TR>
+</TABLE>
+
+<A NAME="tab3"></A></DIV>
+<P>
+<DIV ALIGN="CENTER"></DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+シャドーページングの場合と同様に、VT-xはこれ
+らの情報を提供していません。このため、ハイパー
+バイザはシャドーページングの場合と同様にExit要
+因になった命令をソフトウェアエミュレーションす
+る必要があります。このため、メモリマップドI/O
+のハンドリングにおいては、EPTでもシャドーペー
+ジングの場合と同様にオーバーヘッドが発生しま
+す。<A NAME="tex2html7"
+  HREF="footnode.html#foot82"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A>
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html103"
+  HREF="node9.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html101"
+  HREF="part3.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html95"
+  HREF="node7.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html104"
+  HREF="node9.html">Local APIC 仮想化</A>
+<B> Up:</B> <A NAME="tex2html102"
+  HREF="part3.html">第 3 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html96"
+  HREF="node7.html">VT-x におけるメモリマップド I/O のハンドリング方法(シャドーページングの場合)</A>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>
