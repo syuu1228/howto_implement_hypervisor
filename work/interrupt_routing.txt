@@ -1,0 +1,129 @@
+*1325757315*[linux][SMP][x86]Kernel/VM Advent Calendar 25日目 最近のPCアーキテクチャにおける割り込みルーティングの仕組み
+
+※追記：MSIはPCI 3.0からじゃなくてPCI 2.3からだとの指摘を受けて書き換え。
+
+※追記：[http://d.hatena.ne.jp/syuu1228/20120105/1325757315#c1325795167:title=hisakさんから詳しくコメントが入っている]ので、併せて読んで下さい。
+
+
+とてつもなく遅れた[http://atnd.org/events/21910:title=Kernel/VM Advent Calendar]の25日目の記事です。
+
+
+Linuxにおける/proc/irq/<IRQ>/smp_affinityはハードウェアにどのような設定を行うことにより実現されているのか、或いは最近のPCアーキテクチャにおける割り込みの仕組みはどうなっているのか、という辺りが知りたかったので調べてみた。
+結構こんがらがっているので、予想外に時間を食ってしまった…まだ調べ尽くせていないが、分からない事はTODOとして一旦現時点での理解を書いておこうと思う。
+
+**前提条件
+-2つ以上のCPUコアを持つ、Core2世代或いはCore iシリーズ世代のIntel CPU／チップセット
+-割り込みを行う主体はPCIeデバイスである（主にNICを想定しているが、これに限定されない）
+-Legacyな8259割り込みコントローラを使うことは考慮しない
+-x86_64向けLinuxカーネル（解析に使っているバージョンは3.2.0+）が動作している
+-仮想化は使用しない
+
+**PCIeに於ける割り込みの種類
+***レガシー割り込み（INTx）
+PCI規格に最初から用意されていた割り込み方法で、大半のPCIデバイスはこの割り込みを用いている。
+PCIバスのメインラインとは別に用意された割り込み用の物理的なピンを用いて割り込みを通知する。
+
+PCIeには割り込み用ピンは用意されておらず、帯域内メッセージを用いるレガシー割り込みエミュレーションによってソフト的な互換性を維持しているものの、基本的にはMSI／MSI-X割り込みへ移行することが推奨されているものと思われる。
+
+<span class="deco" style="font-style:italic;">※TODO：更に細かい説明
+</span>
+***MSI割り込み
+<del datetime="2012-01-06T12:29:33+09:00">PCI 3.0</del>PCI 2.3から追加された割り込みモードでピンを使用しない帯域内メッセージで割り込みを行う。
+デバイスあたり最大32個のMSIメッセージをサポートしている。
+
+***MSI-X割り込み
+PCI 3.0ではオプションとされPCIe 1.0から必須とされた割り込みモードで、MSI割り込みの拡張版。
+デバイスあたり最大2048個のメッセージをサポートしている。
+
+**割り込みルーティング
+***レガシー割り込み
+デバイスからピン経由で割り込みを通知→IOAPICでRedirection Table Entryを参照、通知先LAPICを決定→CPU内のLAPICへ割り込みを通知
+<span class="deco" style="font-style:italic;">※TODO：図、これで本当に正しいかどうか確認</span>
+
+***MSI割り込み
+デバイスはPCI Configuration SpaceのCapability Structure内のMSIフィールドを参照、MSI AddressレジスタとMSI Dataレジスタの値から通知先LAPICとLAPIC上のベクタ番号を決定→CPU内のLAPICへ割り込みを通知
+
+<span class="deco" style="font-style:italic;">※TODO：図
+</span>
+***MSI-X割り込み
+レジスタの構成が異なる（ベクタ毎にAddressとDataが用意されている）が基本的な仕組みはMSI割り込みと同様
+
+<span class="deco" style="font-style:italic;">※TODO：ちゃんと書きなおし
+</span>
+**MSI割り込みの詳細
+<span class="deco" style="font-style:italic;">※TODO：Interrupt Remappingについて追記
+</span>
+***Capability Structure
+[http://nahitafu.cocolog-nifty.com/nahitafu/2007/02/pci_express_2b63.html:title]を見るとイメージが分かると思うが、Configuration SpaceからLinked List状に複数のcapabilityが繋がる構造になっていて、CAPIDが0xd0なのがMSIのフィールドで、ここにはMSICTL, MSIAR, MSIDRの3つのレジスタがある。
+
+***MSI Control Register(MSICTL)
+どのCPUに割り込むかを考える上では重要ではないので省略
+
+<span class="deco" style="font-style:italic;">※TODO：ちゃんと書きなおし
+</span>
+***MSI Address Register(MSIAR)
+-31:20 = 0xfee
+-19:12 = Destination ID
+-11:4 = IA32では未使用
+-3 = Address Redirection Hint(RH)
+--0: Directed
+--1: Redirectable
+-2 = Address Destination Mode(DM)
+--0: Physical Mode
+--1: Logical Mode
+-1:0 = 予約
+
+Destination ModeがLogicalかつRedirection HintがRedirectableな場合はDestination IDでビットが立っているCPUの中でTask Priority Register(TPR)が最も低いCPUのLAPICへ割り込みが送られる。
+それ以外のRH, DMの組み合わせではDestination IDで指定されているビットの中で特定のCPUのLAPICへ割り込みが送られる（※bitが複数立ってる場合どう選ぶのだろう…）
+
+Physical  ModeでDestination IDが0xffの場合はブロードキャスト割り込みを行う。
+
+<span class="deco" style="font-style:italic;">※TODO：Extended Mode（x2APIC）について追記
+</span>
+***MSI Data Register(MSIDR)
+-31:16 = 0x0000
+-15 = Trigger mode
+--0: Edge
+--1: Level
+-14 = Delivery status
+--0: Deassert
+--1: Assert
+-13:12 = 0x00
+-11:8 = Delivery mode
+--0000: Fixed
+--0001: Lowest priority
+--0010: SMI/PMI/MCA
+--0011: Reserved
+--0100: NMI
+--0101: INIT
+--0110: Reserved
+--0111: ExtINT
+--1000-1111: Reserved
+-7:0 = Interrupt Vector
+
+Delivery modeがFixedの場合はDestinationに指定された全てのCPUへ割り込みを行う。
+Lowest Priorityの場合はTask Priority Registerの値が最も低いCPUへ割り込みを行う。
+Interrupt Vectorに割り込み先LAPICのVector番号を指定。
+
+<span class="deco" style="font-style:italic;">※TODO：MSIDRのDelivery ModeとMSIARのRH、DMの組み合わせによってどのような事が起きるのか良く分からないのをはっきりさせたい</span>
+
+***Linuxカーネルで実際にレジスタの値を設定している所を見てみる
+
+[http://lxr.linux.no/linux+v3.2/arch/x86/kernel/apic/io_apic.c#L3167:title=msi_compose_msg]でレジスタに書き込みたい値を用意しているので、これを見てみる。
+msg->address_loがMSIARレジスタで、apic->irq_dest_modeが0ならphysical mode、1ならlogical modeを設定、apic->irq_delivery_modeがdest_LowestPrioならRedirectable（MSI_ADDR_REDIRECTION_LOWPRI）を、そうでなければDirected（MSI_ADDR_REDIRECTION_CPU）を設定、変数destをDestination IDとして設定している。
+
+msg->dataがMSIDRレジスタで、apic->irq_delivery_modeがdest_LowestPrioならLowest priorityを、そうでなければFixedを設定、cfg->vectorの値をInterrupt Vectorとして設定している。
+
+apic->irq_dest_modeとapic->irq_delivery_modeの値はIO APICのドライバ毎に違うのだが、x86_64の標準ドライバの[http://lxr.linux.no/linux+v3.2/arch/x86/kernel/apic/apic_flat_64.c#L180:title=apic_flat_64.c]ではirq_dest_modeは1, irq_delivery_modeはdest_LowestPrioに設定されている。
+
+これらの値は割り込み初期化時に設定され、/proc/irq/<IRQ>/smp_affinityの書き換え時にも維持される。
+smp_affinityの書き換え時には、[http://lxr.linux.no/linux+v3.2/arch/x86/kernel/apic/io_apic.c#L3201:title=Destination IDとInterrupt Vectorだけが変更される]。
+
+全ての環境でLogical modeかつLowest priorityが使えるとは限らないので、場合によってはPhysical Modeで初期化されていてsmp_affinityの値を0xffにしてもCPU0にしか割り込まないという挙動を行う事も有り得る。
+実際、論理CPUが12個あるCore i7上でLinux 3.2.0+を走らせている環境ではExtended Physical Mode（<span class="deco" style="font-style:italic;">※TODO：Extended Modeの解説</span>）で初期化されていて、割り込み分散が行われていなかった（<span class="deco" style="font-style:italic;">※TODO：Extended Logical Modeで動いていない理由は何故か考えてみる</span>）。
+
+**参考資料
+- [http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html:title]
+- [http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html:title]
+- PCI Local Bus Specification Revision 3.0
+- PCI Express 2.0 Base Specification Revision 0.9
