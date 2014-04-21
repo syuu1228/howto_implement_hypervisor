@@ -162,11 +162,41 @@ Local APICへIPI ( Inter-Processor Interrupt:プロ
  表\ref{table1}に割り込みの処理で利用されるLocal APICの
 主なレジスタを示します。
 
-\begin{figure}\centering
-TODO: 表
+\begin{table}\centering
+\begin{tabular}{|p{3cm}|p{3cm}|p{10cm}|} \hline
+IRR（Interrupt Request Register） & 割り込み要求レジスタ（Read-only）&
+未処理の割り込みを管理するレジスタ。
+Local APICに外部割り込みが着信する度にベクタ番号に対応するビットがセットされる。 \\
+\hline
+ISR（In-Service Register）& インサービスレジスタ（Read-only） &
+次に発行される割り込みの候補を管理するレジスタ。
+EOIレジスタへ書き込まれるとLocal APICによってIRRから最高優先度のビットがコピーされる。 \\
+\hline
+EOI（End Of Interrupt）& 割り込み終了レジスタ（Write-only） &
+割り込み処理の終了をLocal APICに通知する為のレジスタ。 \\
+\hline
+TPR（Task Priority Register）&  タスク優先度レジスタ（Read/write） &
+外部割り込みに対する実行中タスクの優先度を設定するレジスタ。
+TPRに書き込まれた優先度より低い優先度の割り込みはマスクされる。 \\
+\hline
+PPR（Processor Priority Register）&  プロセッサ優先度レジスタ（Read-only） &
+実際の割り込み着信時にマスクを行うか否かの判定に使われるレジスタで、TPRとISRに連動して更新される。 \\
+\hline
+Local APIC ID Register & LAPIC IDレジスタ（Read/Write） &
+システム全体でCPUを一意に特定する為のIDであるLAPIC IDを格納しているレジスタ。
+LAPIC IDはI/O APICから外部割り込みを転送する時やIPIを送るときなどに使用される。 \\
+\hline
+ICR（Interrupt Command Register）& 割り込みコマンドレジスタ（Read/write）& 
+IPI（プロセッサ間割り込み）を送信する為のレジスタ。\\
+\hline
+LDR（Logical Destination Register）&& Logical APIC IDを指定, \\
+\hline
+DFR（Destination Format Register）&& Logical Destination Modeのモデルを指定（Flat model/Cluster model）\\
+\hline
+\end{tabular}
 \caption{Local APIC の主なレジスタ}
 \label{table1}
-\end{figure}
+\end{table}
 
  割り込み着信時の Local APIC および CPU
 の挙動を簡単にまとめると、次のよう流れになります。
@@ -235,11 +265,21 @@ Tableに設定され、システムバスを通じてCPUの
 Local APICへ転送されます。Redirection Tableの各
 エントリのフィールドの詳細を表\ref{table2}に示します。
 
-\begin{figure}\centering
-TODO: 表
+\begin{table}\centering
+\begin{tabular}{|p{3cm}|p{3cm}|p{10cm}|} \hline
+63:56:00 & Destination & 宛先Local APICの指定 \\ \hline
+16 & Mask & 割り込みマスク \\ \hline
+15 & Trigger Mode & エッジトリガ／レベルセンシティブ \\ \hline
+14 & Remote IRR & レベルセンシティブモードで割り込み送信中／EOI着信済み \\ \hline
+13 & Interrupt Pin Polarity & レベルセンシティブモードでhigh/lowのどちらを割り込みリクエストとするか \\ \hline
+12 & Delivery Status & 割り込みペンディング中かどうか \\ \hline
+11 & Destination Mode & Physical Mode／Logical Mode \\ \hline
+10:08 & Delivery Mode & Fixed／Lowest Priorityなど \\ \hline
+7:00 & Vector & ベクタ番号 \\ \hline
+\end{tabular}
 \caption{I/O APIC の Redirection Table Entry}
 \label{table2}
-\end{figure}
+\end{table}
 
  Redirection Table EntryではDestination Modeを
 指定する必要があります。Destination Modeに
@@ -281,10 +321,7 @@ TPRが最も小さいCPUへ割り込みます。TPRの値が
 Destination Modeでは最大8CPUしかサポートでき
 ません。このため、 Nehalem世代よりx2APICと呼ば
 れる拡張版APICが導入され、アドレス幅は8bitか
-ら32bitへ拡張されました
-\footnote{参考資料 Intel64 Architecture x2APIC Specification
-　　   ( http://www.intel.com/content/dam/doc/specification-update/64-architecture-x2apic-specification.pdf )}
-。
+ら32bitへ拡張されました\cite{x2APIC}。
 
 \section{MSI・MSI-X 割り込み}
 
@@ -313,10 +350,7 @@ CPUの設定は各PCIデバイスのコンフィギュレー
 ションスペースに設定されます。詳細は割愛します
 が、コンフィギュレーションスペース内の割り込み
 の設定フィールドでは、表2のRedirection Table
-Entryに近い内容が割り込みごとに設定できます
-\footnote{参考資料
-　　   http://d.hatena.ne.jp/syuu1228/20120105/1325757315}
-。
+Entryに近い内容が割り込みごとに設定できます\cite{interrupt-routing}。
 
 \section{まとめ}
 
@@ -328,5 +362,11 @@ Entryに近い内容が割り込みごとに設定できます
 \section{ライセンス}
 Copyright (c) 2014 Takuya ASADA.
 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。
+
+\begin{thebibliography}{4}
+  \bibitem{x2APIC} Intel64 Architecture x2APIC Specification \url{http://www.intel.com/content/dam/doc/specification-update/64-architecture-x2apic-specification.pdf}
+  \bibitem{interrupt-routing} 最近のPCアーキテクチャにおける割り込みルーティングの仕組み \url{http://d.hatena.ne.jp/syuu1228/20120105/1325757315}
+\end{thebibliography}
+
 
 \end{document}
