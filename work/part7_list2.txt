@@ -1,0 +1,101 @@
+......(省略)......
+static int
+vm_device_open(const char *name)
+{
+        int fd, len;
+        char *vmfile;
+
+	len = strlen("/dev/vmm/") + strlen(name) + 1;
+	vmfile = malloc(len);
+	assert(vmfile != NULL);
+	snprintf(vmfile, len, "/dev/vmm/%s", name);
+
+        /* Open the device file */
+        fd = open(vmfile, O_RDWR, 0);                               (4)
+
+	free(vmfile);
+        return (fd);
+}
+......(省略)......
+vm_open(const char *name)
+{
+	struct vmctx *vm;
+
+	vm = malloc(sizeof(struct vmctx) + strlen(name) + 1);           (2)
+	assert(vm != NULL);
+
+	vm->fd = -1;
+	vm->name = (char *)(vm + 1);
+	strcpy(vm->name, name);
+
+	if ((vm->fd = vm_device_open(vm->name)) < 0)                    (3)
+		goto err;
+
+	return (vm);
+err:
+	vm_destroy(vm);
+	return (NULL);
+}
+......(省略)......
+char *
+vm_map_memory(struct vmctx *ctx, vm_paddr_t gpa, size_t len)
+{
+
+	/* Map 'len' bytes of memory at guest physical address 'gpa' */
+	return ((char *)mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED,
+		     ctx->fd, gpa));                                        (6)
+}
+......(省略)......
+int
+vm_get_register(struct vmctx *ctx, int vcpu, int reg, uint64_t *ret_val)
+{
+	int error;
+	struct vm_register vmreg;
+
+	bzero(&vmreg, sizeof(vmreg));
+	vmreg.cpuid = vcpu;
+	vmreg.regnum = reg;
+
+	error = ioctl(ctx->fd, VM_GET_REGISTER, &vmreg);                (12)
+	*ret_val = vmreg.regval;
+	return (error);
+}
+......(省略)......
+int
+vm_run(struct vmctx *ctx, int vcpu, uint64_t rip, struct vm_exit *vmexit)
+{
+	int error;
+	struct vm_run vmrun;
+
+	bzero(&vmrun, sizeof(vmrun));
+	vmrun.cpuid = vcpu;
+	vmrun.rip = rip;
+
+	error = ioctl(ctx->fd, VM_RUN, &vmrun);                         (19)
+	bcopy(&vmrun.vm_exit, vmexit, sizeof(struct vm_exit));          (20)
+	return (error);
+}
+
+
+
+(2) vm_open()はstruct vmctxをアロケートし、
+
+(3) vmctx->fdにファイルディスクリプタを保存します。
+
+(4) vm_device_open()は/dev/vmm/${name}を読み書き用でオープンします。
+
+(6) /dev/vmm/${name}をmmap()します。
+    vmm.koからゲストメモリ空間のアドレスが渡されます。
+
+(12)/dev/vmm/${name}へVM_GET_REGISTER ioctlを行います。
+    vmm.koからレジスタの値が渡されます。
+
+(19)/dev/vmm/${name}へVM_RUN ioctlを行います。
+    vmm.koはこのスレッドが実行されているCPUをVT-x non root modeへ移行し、
+    vmrun.ripで指定されたアドレスから実行を開始します。
+
+(20)VMX non root modeでハイパーバイザの介入が必要な何らかのイベントが発生すると
+    vmm.koの中でトラップされ、/usr/sbin/bhyveでイベントを処理する必要がある場合は
+    ioctlがリターンされます。
+    リターンされた理由をvmm.koからstruct vmexitで受け取ります。
+
