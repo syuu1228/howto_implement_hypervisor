@@ -1,3 +1,33 @@
 \documentclass[a4j,12pt]{jarticle}
 \usepackage[dvipdfmx]{graphicx}
 \usepackage[dvipdfmx]{hyperref}
+%
+% ---- 本文中でプログラムを掲載する際にキャプションを「リスト1」のようにする設定
+%
+% http://en.wikibooks.org/wiki/LaTeX/Floats,_Figures_and_Captions#Custom_floats
+% 本文中でリストと表現されているところは
+%
+% \begin{program}..\end{program}を使います。
+%
+%  \begin{program}\centering
+%  \begin{verbatim}
+%
+%  #define COM1_PORT (0x3f8)
+%  #define COM1_LSR (COM1_PORT + 0)
+%  #define COM1_RBR (COM1_PORT + 5)
+%  unsigned char read_reg_byte(unsigned short port) {
+%    unsigned char val;
+%    asm volatile("inb %1, %0" : "=a"(val) : "Nd"(port));
+%    return val;
+%  }
+%  \end{verbatim}
+%  \caption{I/O マップド I/O での read\_reg\_byte() 関数およびレジスタの宣言}
+%  \end{program}
+%
+% TODO: programをリストに変更する
+%
+\usepackage{float}
+% 例では次のようになっているが...
+%\newfloat{program}{thp}{lop}
+\newfloat{program}{thp}{lop}
+% ------------------------------------------------------------------------------

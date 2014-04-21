@@ -39,7 +39,7 @@
 
 \subsection*{シリアルポートの受信処理}
 
-\begin{figure}\centering
+\begin{program}\centering
 \begin{verbatim}
 
 unsigned char read_com1(void) {
@@ -49,7 +49,7 @@ unsigned char read_com1(void) {
 
 \end{verbatim}
 \caption{シリアルポートの受信処理}
-\end{figure}
+\end{program}
 
  リスト 1 は、最も単純に実装した場合のシリアル
 ポートの受信処理のコードです。解説を単純化する
@@ -94,7 +94,7 @@ Status Registerのチェック処理をビジーウェイトで
 read\_reg\_byte()関数及びレジスタの宣言はリスト2
 のようになります。
 
-\begin{figure}\centering
+\begin{program}\centering
 \begin{verbatim}
 
 #define COM1_PORT (0x3f8)
@@ -107,7 +107,7 @@ unsigned char read_reg_byte(unsigned short port) {
 }
 \end{verbatim}
 \caption{I/O マップド I/O での read\_reg\_byte() 関数およびレジスタの宣言}
-\end{figure}
+\end{program}
 
  一方、メモリマップドI/Oでは、各デバイスの
 ハードウェアレジスタをメモリ空間の一部に割り付
@@ -119,7 +119,7 @@ unsigned char read_reg_byte(unsigned short port) {
 理のread\_reg\_byte()関数及びレジスタの宣言はリス
 ト3のようになります。
 
-\begin{figure}\centering
+\begin{program}\centering
 
 \begin{verbatim}
 
@@ -131,7 +131,7 @@ unsigned char read_reg_byte(void *addr) {
 }
 \end{verbatim}
 \caption{メモリマップド I/O での read\_reg\_byte() 関数およびレジスタの宣言}
-\end{figure}
+\end{program}
 
  ゲストマシン上で各種デバイスをサポートするに
 は、この2つの種類のI/Oを仮想化し、アクセスさ
