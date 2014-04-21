@@ -1,0 +1,94 @@
+......(省略)......
+ 666:  static void *
+ 667:  vmx_vminit(struct vm *vm)                                    ❻
+ 668:  {
+......(省略)......
+ 725:  	for (i = 0; i < VM_MAXCPU; i++) {                           ❼
+......(省略)......
+ 735:  		error = vmcs_set_defaults(&vmx->vmcs[i],                ❽
+ 736:  					  (u_long)vmx_longjmp,
+ 737:  					  (u_long)&vmx->ctx[i],
+ 738:  					  vtophys(vmx->pml4ept),
+ 739:  					  pinbased_ctls,
+ 740:  					  procbased_ctls,
+ 741:  					  procbased_ctls2,
+ 742:  					  exit_ctls, entry_ctls,
+ 743:  					  vtophys(vmx->msr_bitmap),
+ 744:  					  vpid);
+......(省略)......
+ 770:  	}
+ 771:  
+ 772:  	return (vmx);
+ 773:  }
+......(省略)......
+1354:  static int
+1355:  vmx_run(void *arg, int vcpu, register_t rip)                 ⑦
+1356:  {
+......(省略)......
+1366:  	vmxctx = &vmx->ctx[vcpu];
+......(省略)......
+1375:  	VMPTRLD(vmcs);
+......(省略)......
+1385:  	if ((error = vmwrite(VMCS_HOST_CR3, rcr3())) != 0)
+1386:  		panic("vmx_run: error %d writing to VMCS_HOST_CR3", error);
+1387:  
+1388:  	if ((error = vmwrite(VMCS_GUEST_RIP, rip)) != 0)            ⑧
+1389:  		panic("vmx_run: error %d writing to VMCS_GUEST_RIP", error);
+1390:  
+1391:  	if ((error = vmx_set_pcpu_defaults(vmx, vcpu)) != 0)
+1392:  		panic("vmx_run: error %d setting up pcpu defaults", error);
+1393:  
+1394:  	do {                                                        ⑨
+1395:  		lapic_timer_tick(vmx->vm, vcpu);
+1396:  		vmx_inject_interrupts(vmx, vcpu);
+1397:  		vmx_run_trace(vmx, vcpu);
+1398:  		rc = vmx_setjmp(vmxctx);                                ⑩
+......(省略)......
+1402:  		switch (rc) {
+1403:  		case VMX_RETURN_DIRECT:                                 ⑫
+1404:  			if (vmxctx->launched == 0) {                        ⑬
+1405:  				vmxctx->launched = 1;
+1406:  				vmx_launch(vmxctx);                             ⑭
+1407:  			} else
+1408:  				vmx_resume(vmxctx);
+1409:  			panic("vmx_launch/resume should not return");
+1410:  			break;
+......(省略)......
+1458:  	} while (handled);
+......(省略)......
+1480:  	VMCLEAR(vmcs);
+1481:  	return (0);
+......(省略)......
+1490:  }
+......(省略)......
+1830:  struct vmm_ops vmm_ops_intel = {
+1831:  	vmx_init,
+1832:  	vmx_cleanup,
+1833:  	vmx_vminit,                                                 ❺
+1834:  	vmx_run,                                                    ⑥
+1835:  	vmx_vmcleanup,
+1836:  	ept_vmmmap_set,
+1837:  	ept_vmmmap_get,
+1838:  	vmx_getreg,
+1839:  	vmx_setreg,
+1840:  	vmx_getdesc,
+1841:  	vmx_setdesc,
+1842:  	vmx_inject,
+1843:  	vmx_getcap,
+1844:  	vmx_setcap
+1845:  };
+
+
+❻  結果として、 vm_createはvmx_vminitが呼び出される。
+❼  vmx_vminitでは仮想CPUごとのVMCSの初期化処理が行われる。
+   その過程で幾つかの関数が呼び出されるが、ここではvmcs_set_defaultsにのみ着目する。
+❽  vmcs_set_defaultsの第二引数にvmx_longjmpを指定して呼んでいる。
+⑦  結果として、VM_RUN ioctlはvmx_run内で実際に処理される。
+⑧  VMCSにゲストのRIPレジスタをセットする。
+⑨  ユーザランドでハンドルしなければならないイベントが来るまでカーネル内でループし、VMEntryを繰り返す。
+⑩  アセンブリコードのvmx_setjmpを呼び出し、vmxctxへホストレジスタを退避、VMX_RETURN_DIRECTがリターンされる。
+⑫  rcはVMX_RETURN_DIREC
+⑬  1度目のループではlaunched == 0で vmx_launchが呼ばれる。二度目以降はvmx_resumeが呼ばれる。
+⑭  アセンブリコードのvmx_launchを呼び出してVMX non-root modeへCPUを切り替える。
+❺  ops->vminitはvmx_vminitを指している。
+⑥  ops->vmrunはvmx_runを指している。

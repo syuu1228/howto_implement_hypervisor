@@ -1,0 +1,85 @@
+......(省略)......
+  69:  #define	VMX_GUEST_RESTORE						\           ⑰
+  70:  	movq	%rdi,%rsp;						\
+  71:  	movq	VMXCTX_GUEST_CR2(%rdi),%rsi;				\
+  72:  	movq	%rsi,%cr2;						\
+  73:  	movq	VMXCTX_GUEST_RSI(%rdi),%rsi;				\
+  74:  	movq	VMXCTX_GUEST_RDX(%rdi),%rdx;				\
+  75:  	movq	VMXCTX_GUEST_RCX(%rdi),%rcx;				\
+  76:  	movq	VMXCTX_GUEST_R8(%rdi),%r8;				\
+  77:  	movq	VMXCTX_GUEST_R9(%rdi),%r9;				\
+  78:  	movq	VMXCTX_GUEST_RAX(%rdi),%rax;				\
+  79:  	movq	VMXCTX_GUEST_RBX(%rdi),%rbx;				\
+  80:  	movq	VMXCTX_GUEST_RBP(%rdi),%rbp;				\
+  81:  	movq	VMXCTX_GUEST_R10(%rdi),%r10;				\
+  82:  	movq	VMXCTX_GUEST_R11(%rdi),%r11;				\
+  83:  	movq	VMXCTX_GUEST_R12(%rdi),%r12;				\
+  84:  	movq	VMXCTX_GUEST_R13(%rdi),%r13;				\
+  85:  	movq	VMXCTX_GUEST_R14(%rdi),%r14;				\
+  86:  	movq	VMXCTX_GUEST_R15(%rdi),%r15;				\
+  87:  	movq	VMXCTX_GUEST_RDI(%rdi),%rdi; /* restore rdi the last */
+  88:  
+  89:  #define	VM_INSTRUCTION_ERROR(reg)					\
+  90:  	jnc 	1f;							\
+  91:  	movl 	$VM_FAIL_INVALID,reg;		/* CF is set */		\
+  92:  	jmp 	3f;							\
+  93:  1:	jnz 	2f;							\
+  94:  	movl 	$VM_FAIL_VALID,reg;		/* ZF is set */		\
+  95:  	jmp 	3f;							\
+  96:  2:	movl 	$VM_SUCCESS,reg;					\
+  97:  3:	movl	reg,VMXCTX_LAUNCH_ERROR(%rsp)
+......(省略)......
+ 107:  ENTRY(vmx_setjmp)                                            ⑪
+ 108:  	movq	(%rsp),%rax			/* return address */
+ 109:  	movq    %r15,VMXCTX_HOST_R15(%rdi)
+ 110:  	movq    %r14,VMXCTX_HOST_R14(%rdi)
+ 111:  	movq    %r13,VMXCTX_HOST_R13(%rdi)
+ 112:  	movq    %r12,VMXCTX_HOST_R12(%rdi)
+ 113:  	movq    %rbp,VMXCTX_HOST_RBP(%rdi)
+ 114:  	movq    %rsp,VMXCTX_HOST_RSP(%rdi)
+ 115:  	movq    %rbx,VMXCTX_HOST_RBX(%rdi)
+ 116:  	movq    %rax,VMXCTX_HOST_RIP(%rdi)
+ 117:  
+ 118:  	/*
+ 119:  	 * XXX save host debug registers
+ 120:  	 */
+ 121:  	movl	$VMX_RETURN_DIRECT,%eax
+ 122:  	ret
+ 123:  END(vmx_setjmp)
+......(省略)......
+ 223:  ENTRY(vmx_launch)                                            ⑮
+ 224:  	VMX_DISABLE_INTERRUPTS
+ 225:  
+ 226:  	VMX_CHECK_AST
+ 227:  
+ 228:  	/*
+ 229:  	 * Restore guest state that is not automatically loaded from the vmcs.
+ 230:  	 */
+ 231:  	VMX_GUEST_RESTORE                                           ⑯
+ 232:  
+ 233:  	vmlaunch                                                    ⑱
+ 234:  
+ 235:  	/*
+ 236:  	 * Capture the reason why vmlaunch failed.
+ 237:  	 */
+ 238:  	VM_INSTRUCTION_ERROR(%eax)                                  ⑲
+ 239:  
+ 240:  	/* Return via vmx_setjmp with return value of VMX_RETURN_VMLAUNCH */
+ 241:  	movq	%rsp,%rdi
+ 242:  	movq	$VMX_RETURN_VMLAUNCH,%rsi
+ 243:  
+ 244:  	addq	$VMXCTX_TMPSTKTOP,%rsp
+ 245:  	callq	vmx_return
+ 246:  END(vmx_launch)
+
+
+
+
+⑪  vmctx（VMCSではない）にホストレジスタを退避してVMX_RETURN_DIRECTをリターンする。
+⑰  vmxctx上のゲストレジスタ値を実レジスタに展開。 
+   これらのレジスタはVMEntry/VMExit時にVMCSからセーブ・リストアされないのでハイパーバイザがケアする必要がある。
+⑮  ゲストレジスタをリストアしてVMEntryする。
+⑯  ゲストレジスタリストアを行うマクロを展開。
+⑱  vmlaunch命令でVMX non-root modeへVMEntryする。
+⑲  ここにはVMEntryが失敗したときのみ到達する。
+   正常にVMEntryしたのちVMExitした場合は、前述の通りvmx_longjmpへジャンプする。

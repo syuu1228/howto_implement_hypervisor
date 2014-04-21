@@ -1,0 +1,44 @@
+......(省略)......
+ 119:  static struct vmm_ops *ops;
+......(省略)......
+ 123:  #define	VMINIT(vm)	(ops != NULL ? (*ops->vminit)(vm): NULL)    ❹
+ 124:  #define	VMRUN(vmi, vcpu, rip) \
+ 125:  	(ops != NULL ? (*ops->vmrun)(vmi, vcpu, rip) : ENXIO)           ⑤
+......(省略)......
+ 195:  static int
+ 196:  vmm_init(void)
+ 197:  {
+......(省略)......
+ 207:  	if (vmm_is_intel())
+ 208:  		ops = &vmm_ops_intel;
+ 209:  	else if (vmm_is_amd())
+ 210:  		ops = &vmm_ops_amd;
+......(省略)......
+ 216:  	return (VMM_INIT());
+ 217:  }
+......(省略)......
+ 261:  struct vm *
+ 262:  vm_create(const char *name)
+ 263:  {
+......(省略)......
+ 275:  	vm->cookie = VMINIT(vm);                                    ❸
+......(省略)......
+ 287:  }
+......(省略)......
+ 672:  int
+ 673:  vm_run(struct vm *vm, struct vm_run *vmrun)
+ 674:  {
+......(省略)......
+ 681:  	vcpuid = vmrun->cpuid;
+......(省略)......
+ 688:  	rip = vmrun->rip;
+......(省略)......
+ 701:  	error = VMRUN(vm->cookie, vcpuid, rip);                     ④
+......(省略)......
+ 757:  }
+
+
+❹ VMINIT()マクロは vmm_ops構造体上の関数ポインタops->vminitを呼び出す。
+⑤ VMRUN()マクロはvmm_ops構造体 上の関数ポインタops->vmrunを呼び出す。
+❸ vm_create()はVMINIT()マクロを呼び出す。
+④ vm_run()はVMRUN()マクロを呼び出す。
