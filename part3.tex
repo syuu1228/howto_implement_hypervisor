@@ -29,7 +29,7 @@
 「HDDのセクタを読み取る」「LANへパケットを送出
 する」「画面を描画する」などの目的を果たしていま
 す。また、デバイスによっては割り込み機能やDMA
-機能を持っています\footnote[1]{
+機能を持っています\footnote{
 割り込みは OS へ何らかのメッセージを通知するために用いられます。
 また、 DMA は CPU 負荷を下げるためにデバイスからCPU を介さず直接
 データをメモリへ転送する機能です。
@@ -37,7 +37,7 @@
 。デバイスアクセスの例とし
 て、シリアルポートの受信処理を見てみましょう。
 
-\subsection{シリアルポートの受信処理}
+\subsection*{シリアルポートの受信処理}
 
 \begin{figure}\centering
 \begin{verbatim}
@@ -48,7 +48,7 @@ unsigned char read_com1(void) {
 }
 
 \end{verbatim}
-\caption{▼リスト 1  シリアルポートの受信処理}
+\caption{シリアルポートの受信処理}
 \end{figure}
 
  リスト 1 は、最も単純に実装した場合のシリアル
@@ -106,7 +106,7 @@ unsigned char read_reg_byte(unsigned short port) {
   return val;
 }
 \end{verbatim}
-\caption{▼リスト 2   I/O マップド I/O での read\_reg\_byte() 関数およびレジスタの宣言}
+\caption{I/O マップド I/O での read\_reg\_byte() 関数およびレジスタの宣言}
 \end{figure}
 
  一方、メモリマップドI/Oでは、各デバイスの
@@ -120,6 +120,7 @@ unsigned char read_reg_byte(unsigned short port) {
 ト3のようになります。
 
 \begin{figure}\centering
+
 \begin{verbatim}
 
 #define COM1_PORT (0x40100000)
@@ -129,6 +130,7 @@ unsigned char read_reg_byte(void *addr) {
   return *((unsigned char *)addr);
 }
 \end{verbatim}
+\caption{メモリマップド I/O での read\_reg\_byte() 関数およびレジスタの宣言}
 \end{figure}
 
  ゲストマシン上で各種デバイスをサポートするに
@@ -202,7 +204,7 @@ Oポートへアクセスされているのか、アクセス方向
 Information FieldsのExit qualificationフィールドで
 提供されます(表\ref{tab1})。
 
-\begin{table}
+\begin{table}\centering
 \begin{tabular}{|l|l|} \hline
 
 ビットポジション & 内容 \\
@@ -276,8 +278,8 @@ Exception Bitmapの14bit目(page fault exception)に
 Information Fieldsに あ るVM-exit interruption
 informationを参照します(表\ref{tab2})。
 
-\begin{table}
-\begin{tabular}{|l|l|} \hline
+\begin{table}\centering
+\begin{tabular}{|p{4.5cm}|p{10cm}|} \hline
 
 ビットポジション & 内容 \\
 \hline
@@ -322,7 +324,7 @@ qualificationフィールドを読み込みます。ページフォ
 \begin{enumerate}
 
 \item{ページフォルト例外発生時のRIP
-  \footnote[2]{
+  \footnote{
   RIP は実行中の命令のアドレスを持つレジスタ。 32bit モードでは EIP と呼ばれます。
   }
 をVMCSのGuest-State AreaのRIPフィールドから取得}
@@ -361,8 +363,8 @@ I/Oをエミュレーションするにはアクセスサイズ、
 データの書き込み先・読み込み元などの情報が足りま
 せん(表\ref{tab3})。
 
-\begin{table}
-\begin{tabular}{|l|l|} \hline
+\begin{table}\centering
+\begin{tabular}{|p{3.2cm}|p{13cm}|} \hline
 
 ビットポジション & 内容 \\
 \hline
@@ -419,7 +421,7 @@ I/Oをエミュレーションするにはアクセスサイズ、
 る必要があります。このため、メモリマップドI/O
 のハンドリングにおいては、EPTでもシャドーペー
 ジングの場合と同様にオーバーヘッドが発生しま
-す。\footnote[3]{
+す。\footnote{
 EPT が一般的にシャドーページングより高い性能が出せない
 という意味ではなく、メモリーマップド I/O に限っては性能が
 変わらないという意味です。
@@ -465,7 +467,7 @@ VMExit reason 44 (APIC access)が発生するように
 ると(表\ref{tab4})、アクセスのあったレジスタとアクセス方
 向(read だったのか write だったのか)がわかります。
 
-\begin{table}
+\begin{table}\centering
 \begin{tabular}{|l|l|} \hline
 ビットポジション & 内容 \\
 \hline
