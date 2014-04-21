@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>外部割り込み、内部割り込み</TITLE>
+<META NAME="description" CONTENT="外部割り込み、内部割り込み">
+<META NAME="keywords" CONTENT="part4">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part4.css">
+
+<LINK REL="previous" HREF="node1.html">
+<LINK REL="up" HREF="node1.html">
+<LINK REL="next" HREF="node3.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html40"
+  HREF="node3.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html38"
+  HREF="node1.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html34"
+  HREF="node1.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html41"
+  HREF="node3.html">ベクタ番号と IDT</A>
+<B> Up:</B> <A NAME="tex2html39"
+  HREF="node1.html">割り込みの種類</A>
+<B> Previous:</B> <A NAME="tex2html35"
+  HREF="node1.html">割り込みの種類</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00011000000000000000">
+外部割り込み、内部割り込み</A>
+</H2>
+
+<P>
+割り込みは、外部割り込みと内部割り込みの2種
+類に分けられます。外部割り込みとは、ハードウェ
+アからCPUへ「キーボード押された」などのイベント
+通知を行うのに用いられます。外部割り込みは、さ
+らに<B>マスク可能な割り込み</B>と
+<B>ソフトウェアからマスク可能な割り込み(NMI)</B>
+の2種類に分類されます。
+マスク可能な割り込みは通常のデバイスからの割り
+込みに用いられます。また、NMIはハードウェア障
+害の通知など一部特殊な用途に用いられます。
+
+<P>
+内部割り込みとは、CPU内部の要因で発生する割
+り込みのことです。この内部割り込みは、ソフト
+ウェア割り込みと例外に分類されます。ソフトウェ
+ア割り込みとは、割り込みを起こす命令(INT命令)
+により発生する割り込みです。これはシステムコー
+ルの実装に用いられます。例外とは、プログラムを
+実行した結果としてゼロ除算/オーバーフロー/無
+効な命令の実行/ページフォルトなどが発生したと
+きなどに起きる割り込みです。これは、CPUで実行
+されるプログラムの制御に用いられます。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>MSI・MSI-X 割り込み</TITLE>
+<META NAME="description" CONTENT="MSI・MSI-X 割り込み">
+<META NAME="keywords" CONTENT="part4">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part4.css">
+
+<LINK REL="next" HREF="node9.html">
+<LINK REL="previous" HREF="node7.html">
+<LINK REL="up" HREF="part4.html">
+<LINK REL="next" HREF="node9.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html100"
+  HREF="node9.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html98"
+  HREF="part4.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html92"
+  HREF="node7.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html101"
+  HREF="node9.html">まとめ</A>
+<B> Up:</B> <A NAME="tex2html99"
+  HREF="part4.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第 4 回</A>
+<B> Previous:</B> <A NAME="tex2html93"
+  HREF="node7.html">I/O APIC</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00070000000000000000">
+MSI・MSI-X 割り込み</A>
+</H1>
+
+<P>
+I/O APICを経由するPCIデバイスの割り込みは、
+各PCIデバイスからの物理的な割り込み線がI/O
+APICへ接続され、この割り込み線を通じて割り込
+みが送信されていました。
+
+<P>
+この構成では割り込みの数とIRQの割り当てが物
+理配線に依存するため、限られたIRQを複数のデバ
+イスで共有するようなしくみになっていました。ま
+た、1つのデバイスで複数の割り込みを持つことはで
+きませんでした。この制限を解消するため、物理配
+線を用いずPCIバス経由のメッセージとして割り込
+みを送るMessage Signalled Interrupt (MSI)・Extended
+Message Signalled Interrupt (MSI-X)が導入されてい
+ます。PCIではオプション機能として提供されていま
+すが、PCI expressでは必須とされています。
+
+<P>
+MSIでは各デバイスごとに32個、 MSI-Xでは2048
+個の割り込みをサポートします。従来と異なり、デ
+バイス間の割り込みは共有されません。MSI ・ MSI-X
+の割り込みはIO-APICを経由せず、直接Local
+APICへ配送されます(図<A HREF="node5.html#fig2">2</A>参照)。このとき、宛先
+CPUの設定は各PCIデバイスのコンフィギュレー
+ションスペースに設定されます。詳細は割愛します
+が、コンフィギュレーションスペース内の割り込み
+の設定フィールドでは、表2のRedirection Table
+Entryに近い内容が割り込みごとに設定できます[<A
+ HREF="node11.html#interrupt-routing">2</A>]。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>

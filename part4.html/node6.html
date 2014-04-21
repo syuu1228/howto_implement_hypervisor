@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Local APIC</TITLE>
+<META NAME="description" CONTENT="Local APIC">
+<META NAME="keywords" CONTENT="part4">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part4.css">
+
+<LINK REL="next" HREF="node7.html">
+<LINK REL="previous" HREF="node5.html">
+<LINK REL="up" HREF="part4.html">
+<LINK REL="next" HREF="node7.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html80"
+  HREF="node7.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html78"
+  HREF="part4.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html72"
+  HREF="node5.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html81"
+  HREF="node7.html">I/O APIC</A>
+<B> Up:</B> <A NAME="tex2html79"
+  HREF="part4.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第 4 回</A>
+<B> Previous:</B> <A NAME="tex2html73"
+  HREF="node5.html">外部割り込みと割り込みコントローラ</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00050000000000000000">
+Local APIC</A>
+</H1>
+
+<P>
+表<A HREF="#table1">1</A>に割り込みの処理で利用されるLocal APICの
+主なレジスタを示します。
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER"><A NAME="38"></A>
+<TABLE>
+<CAPTION><STRONG>Table 1:</STRONG>
+Local APIC の主なレジスタ</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER"><TABLE CELLPADDING=3 BORDER="1">
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>IRR（Interrupt Request Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>割り込み要求レジスタ（Read-only）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>未処理の割り込みを管理するレジスタ。
+Local APICに外部割り込みが着信する度にベクタ番号に対応するビットがセットされる。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>ISR（In-Service Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>インサービスレジスタ（Read-only）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>次に発行される割り込みの候補を管理するレジスタ。
+EOIレジスタへ書き込まれるとLocal APICによってIRRから最高優先度のビットがコピーされる。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>EOI（End Of Interrupt）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>割り込み終了レジスタ（Write-only）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>割り込み処理の終了をLocal APICに通知する為のレジスタ。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>TPR（Task Priority Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>タスク優先度レジスタ（Read/write）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>外部割り込みに対する実行中タスクの優先度を設定するレジスタ。
+TPRに書き込まれた優先度より低い優先度の割り込みはマスクされる。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>PPR（Processor Priority Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>プロセッサ優先度レジスタ（Read-only）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>実際の割り込み着信時にマスクを行うか否かの判定に使われるレジスタで、TPRとISRに連動して更新される。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>Local APIC ID Register</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>LAPIC IDレジスタ（Read/Write）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>システム全体でCPUを一意に特定する為のIDであるLAPIC IDを格納しているレジスタ。
+LAPIC IDはI/O APICから外部割り込みを転送する時やIPIを送るときなどに使用される。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>ICR（Interrupt Command Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>割り込みコマンドレジスタ（Read/write）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>IPI（プロセッサ間割り込み）を送信する為のレジスタ。</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>LDR（Logical Destination Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>Logical APIC IDを指定,</TD>
+</TR>
+<TR><TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>DFR（Destination Format Register）</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=85>&nbsp;</TD>
+<TD ALIGN="LEFT" VALIGN="TOP" WIDTH=283>Logical Destination Modeのモデルを指定（Flat model/Cluster model）</TD>
+</TR>
+</TABLE>
+
+<A NAME="table1"></A></DIV></TD></TR>
+</TABLE>
+</DIV><P></P>
+<BR>
+
+<P>
+割り込み着信時の Local APIC および CPU
+の挙動を簡単にまとめると、次のよう流れになります。
+
+<P>
+
+<OL>
+<LI>Local APICが割り込みを受信したら、IRRに対応す
+   るベクタ番号のビットをセットする。CPUが割り
+   込みをブロックしている場合はここで処理は終わり
+</LI>
+<LI>IRRにセットされた最高優先度のビットをクリア、
+   同じビットをISRにセット、同じ優先度の割り込
+   みをCPUへ発行する
+</LI>
+<LI>CPUで割り込みハンドラが実行される
+</LI>
+<LI>CPUで実行された割り込みハンドラがEOIレジス
+   タに書き込み、割り込み処理の終了を伝える
+</LI>
+<LI>EOIレジスタへの書き込みを受け取ると、ISRに
+   セットされた最高優先度のビットをクリア。まだ
+   ISRにビットが残っていたら2から繰り返し
+</LI>
+</OL>
+
+<P>
+ただし、タスク優先度/プロセッサ優先度という
+機能があり、これによって割り込みに対する実行中
+タスクの優先度が制御でき、タスクの優先度が受信
+した割り込みより高い場合、その割り込みはマスク
+されます。
+
+<P>
+TPR ・ PPRレジスタの値は優先度クラス(4-7bit)・
+サブ優先度クラス(0-3bit)の2つの値からなり、優先
+度クラスだけが割り込みのマスクに使用されます。
+先度サブクラスは後述の「Lowest priority Mode」
+で使われますが、割り込みのマスクには使用されま
+せん。
+
+<P>
+PPRの更新はTPRに新しい値が書き込まれたと
+きとCPUに割り込みを発行するとき(前述の割り込
+み着信時の手順2の段階)に行われます。値は次のよ
+うに設定されます。
+
+<P>
+
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="188" HEIGHT="108" BORDER="0"
+ SRC="img3.png"
+ ALT="\begin{figure}\centering
+\begin{verbatim}/* [7:4] は優先度クラス */
+/* ...
+...4]
+PPR = TPR
+else
+PPR[7:4] = ISR[7:4]
+PPR[3:0] = 0\end{verbatim}
+\end{figure}">
+</DIV>
+
+<P>
+また、Local APICに割り込みが着信した段階(前
+述の割り込み着信時の手順1の段階)で、IRRにセッ
+トされた最高優先度のビットとPPRの優先度クラス
+(4-7bit)が比較されます。
+
+<P>
+PPRの優先度クラス(4-7bit)のほうが高かった場合
+は割り込みがマスクされます。
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html80"
+  HREF="node7.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html78"
+  HREF="part4.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html72"
+  HREF="node5.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html81"
+  HREF="node7.html">I/O APIC</A>
+<B> Up:</B> <A NAME="tex2html79"
+  HREF="part4.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第 4 回</A>
+<B> Previous:</B> <A NAME="tex2html73"
+  HREF="node5.html">外部割り込みと割り込みコントローラ</A>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Takuya ASADA
+2014-04-22
+</ADDRESS>
+</BODY>
+</HTML>
