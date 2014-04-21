@@ -1,0 +1,32 @@
+IRR（Interrupt Request Register）,割り込み要求レジスタ（Read-only）,
+,未処理の割り込みを管理するレジスタ。,
+,Local APICに外部割り込みが着信する度にベクタ番号に対応するビットがセットされる。,
+ISR（In-Service Register）,インサービスレジスタ（Read-only）,
+,次に発行される割り込みの候補を管理するレジスタ。,
+,EOIレジスタへ書き込まれるとLocal APICによってIRRから最高優先度のビットがコピーされる。,
+EOI（End Of Interrupt）,割り込み終了レジスタ（Write-only）,
+,割り込み処理の終了をLocal APICに通知する為のレジスタ。,
+TPR（Task Priority Register）,タスク優先度レジスタ（Read/write）,
+,外部割り込みに対する実行中タスクの優先度を設定するレジスタ。,
+,TPRに書き込まれた優先度より低い優先度の割り込みはマスクされる。,
+PPR（Processor Priority Register）,プロセッサ優先度レジスタ（Read-only）,
+,実際の割り込み着信時にマスクを行うか否かの判定に使われるレジスタで、TPRとISRに連動して更新される。,
+Local APIC ID Register,LAPIC IDレジスタ（Read/Write）,
+,システム全体でCPUを一意に特定する為のIDであるLAPIC IDを格納しているレジスタ。,
+,LAPIC IDはI/O APICから外部割り込みを転送する時やIPIを送るときなどに使用される。,
+ICR（Interrupt Command Register）,割り込みコマンドレジスタ（Read/write）,
+,IPI（プロセッサ間割り込み）を送信する為のレジスタ。,
+LDR（Logical Destination Register）,Logical APIC IDを指定,
+DFR（Destination Format Register）,Logical Destination Modeのモデルを指定（Flat model/Cluster model）,
+表１．Local APICの主なレジスタ,,
+,,
+63:56:00,Destination,宛先Local APICの指定
+16,Mask,割り込みマスク
+15,Trigger Mode,エッジトリガ／レベルセンシティブ
+14,Remote IRR,レベルセンシティブモードで割り込み送信中／EOI着信済み
+13,Interrupt Pin Polarity,レベルセンシティブモードでhigh/lowのどちらを割り込みリクエストとするか
+12,Delivery Status,割り込みペンディング中かどうか
+11,Destination Mode,Physical Mode／Logical Mode
+10:08,Delivery Mode,Fixed／Lowest Priorityなど
+7:00,Vector,ベクタ番号
+表２．I/O APICのRedirection Table Entry,,
