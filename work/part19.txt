@@ -1,0 +1,140 @@
+ハイパーバイザーの作り方
+第１９回　bhyveにおける仮想NICの実装
+
+はじめに
+これまでに、ゲスト上で発生したIOアクセスのハンドリング方法、virtio-netの仕組みなど、仮想NICの実現方法について解説してきました。
+今回の記事では、/usr/sbin/bhyveが、仮想NICのインタフェースであるvirt-netに届いたパケットをどのように送受信しているのかを解説していきます。
+
+bhyveにおける仮想NICの実装
+bhyveでは、ユーザプロセスである/usr/sbin/bhyve にて仮想IOデバイスを提供しています。また、仮想IOデバイスの一つであるNICは、TAPを利用して機能を提供しています。
+bhyveでは仮想NICであるTAPを物理NICとブリッジすることにより、物理NICが接続されているLANへ参加させることができます（図１）。
+例として、ゲストOSがパケットを送信しようとした場合、どのような経路を経て物理NICへとパケットが送出されていくのか、ゲストOSがパケットを送信しようとした場合を例として見てみましょう。
+
+１，ゲストOSはvirtio-netドライバを用いて、共有メモリ上のリングバッファにパケットを書き込み、IOポートアクセスによってハイパーバイザにパケット送出を通知します。 IOポートアクセスによってVMExitが発生し、CPUの制御がホストOSのvmm.koのコードに戻ります。vmm.koはこのVMExitを受けてioctlをreturnし、ユーザランドプロセスである/usr/sbin/bhyveへ制御を移します。
+２，ioctlのreturnを受け取った/usr/sbin/bhyveは仮想NICの共有メモリ上のリングバッファからパケットを取り出します。
+注）仮想NICのデータ構造とインタフェースの詳細に関しては、連載第１１回・第１２回を参照して下さい。
+３，２で取り出したパケットをwrite()システムコールで/dev/net/tunへ書き込みます。
+４，TAPはブリッジを経由して物理NICへパケットを送出します。
+図１，パケット送信手順
+
+受信処理ではこの逆の流れを辿り、物理NICからtapを経由して/usr/sbin/bhyveへ届いたパケットがvirtio-netのインタフェースを通じてゲストOSへ渡されます。
+
+TAPとは
+bhyveで利用されているTAPについてもう少し詳しくみていきましょう。
+TAPはFreeBSDカーネルに実装された仮想イーサネットデバイスで、ハイパーバイザ／エミュレータ以外ではVPNの実装によく使われています(1)。
+物理NIC用のドライバは物理NICとの間でパケットの送受信処理を行いますが、TAPは/dev/net/tunを通じてユーザプロセスとの間でパケットの送受信処理を行います。
+このユーザプロセスがSocket APIを通じて、TCPv4でVPNプロトコルを用いて対向ノードとパケットのやりとりを行えば、TAPは対向ノードにレイヤ２で直接接続されたイーサーネットデバイスに見えます。
+これがOpenVPNなどのVPNソフトがTAPを用いて実現している機能です（図２）。
+
+(1)  正確にはTUN/TAPとして知られており、TAPがイーサネットレイヤでパケットを送受信するインタフェースを提供するのに対しTUNデバイスはIPレイヤでパケットを送受信するインタフェースを提供します。また、TUN/TAPはFreeBSDの他にもLinux、Windows、OS Xなど主要なOSで実装されています。
+
+
+図２，通常のNICドライバを使ったネットワークとTAPを使ったVPNの比較
+
+では、ここでTAPがどのようなインタフェースをユーザプロセスに提供しているのか見ていきましょう。
+TAPに届いたパケットをUDPでトンネリングするサンプルプログラムの例をコードリスト１に示します。
+
+require "socket"
+TUNSETIFF = 0x400454ca
+IFF_TAP = 0x0002
+PEER = "192.168.0.100"
+PORT = 9876
+# TUNTAPをオープン
+tap = open("/dev/net/tun", “r+") # TUNTAPのモードをTAPに、インタフェース名を”tapN”に設定
+tap.ioctl(TUNSETIFF, ["tap%d", IFF_TAP].pack("a16S")) # UDPソケットをオープン
+sock = UDPSocket.open # ポート9876をLISTEN
+sock.bind("0.0.0.0", 9876)
+while true     # ソケットかTAPにパケットが届くまで待つ
+    ret = IO::select([sock, tap])
+    ret[0].each do |d|
+        if d == tap # TAPにパケットが届いた場合             # TAPからパケットを読み込んでソケットに書き込み
+            sock.send(tap.read(1500), 0, Socket.pack_sockaddr_in(PORT, PEER))
+        else # ソケットにパケットが届いた場合             # ソケットからパケットを読み込んでTAPに書き込み
+            tap.write(sock.recv(65535))
+        end
+    end
+end
+コードリスト１，TAPサンプルプログラム（Ruby）
+
+ユーザプロセスがTAPとやりとりを行うには、/dev/net/tunデバイスファイルを用います。
+パケットの送受信は通常のファイルIOと同様にread()、write()を用いる事が出来ますが、送受信処理を始める前にTUNSETIFF ioctlを用いてTAPの初期化を行う必要があります。
+ここでは、TUNTAPのモード（TUNを使うかTAPを使うか）とifconfigに表示されるインタフェース名の指定を行います。
+ここでTAPに届いたパケットをUDPソケットへ、UDPソケットに届いたパケットをTAPへ流すことにより、TAPを出入りするパケットをUDPで他ノードへトンネリングすることが出来ます（図２右相当の処理）。
+
+bhyveにおける仮想NICとTAP
+VPNソフトではTAPを通じて届いたパケットをユーザプロセスからVPNプロトコルでカプセル化して別ノード送っています。
+ハイパーバイザでTAPを用いる理由はこれとは異なり、ホストOSのネットワークスタックに仮想NICを認識させ物理ネットワークに接続し、パケットを送受信するのが目的です。
+このため、VPNソフトではソケットとTAPの間でパケットをリダイレクトしていたのに対して、ハイパーバイザでは仮想NICとTAPの間でパケットをリダイレクトする事になります。
+それでは、このリダイレクトの部分についてbhyveのコードを実際に確認してみましょう（リスト２）。
+
+/* TAPからデータが届いた時に呼ばれる */ static void
+pci_vtnet_tap_rx(struct pci_vtnet_softc *sc)
+{
+	struct vqueue_info *vq;
+	struct virtio_net_rxhdr *vrx;
+	uint8_t *buf;
+	int len;
+	struct iovec iov;
+					〜 略 〜
+	vq = &sc->vsc_queues[VTNET_RXQ];
+	vq_startchains(vq);
+					〜 略 〜
+	do {
+					〜 略 〜 		 /* 受信キュー上の空きキューを取得 */
+		assert(vq_getchain(vq, &iov, 1, NULL) == 1);
+					〜 略 〜
+		vrx = iov.iov_base;
+q		buf = (uint8_t *)(vrx + 1); /* 空きキューのアドレス */
+		/* TAPから空きキューへパケットをコピー */
+		len = read(sc->vsc_tapfd, buf,
+			   iov.iov_len - sizeof(struct virtio_net_rxhdr));
+		/* TAPにデータが無ければreturn */
+		if (len < 0 && errno == EWOULDBLOCK) {
+					〜 略 〜
+			vq_endchains(vq, 0);
+			return;
+		}
+					〜 略 〜
+		memset(vrx, 0, sizeof(struct virtio_net_rxhdr));
+		vrx->vrh_bufs = 1; /* キューに接続されているバッファ数 */
+					〜 略 〜
+		vq_relchain(vq, len + sizeof(struct virtio_net_rxhdr));
+	} while (vq_has_descs(vq)); /* 空きキューがある間繰り返し */
+					〜 略 〜
+	vq_endchains(vq, 1);
+}
+コードリスト２，/usr/sbin/bhyveの仮想NICパケット受信処理
+
+この関数はsc->vsc_tapfdをkqueue()/kevent()でポーリングしているスレッドによってTAPへのパケット着信時コールバックされます。
+コードの中では、virtio-netの受信キュー上の空きエリアを探して、TAPからキューが示すバッファにデータをコピーしています。
+これによって、TAPへパケットが届いた時は仮想NICへ送られ、仮想NICからパケットが届いた時はゲストOSに送られます。
+その結果、bhyveの仮想NICはホストOSにとってLANケーブルでtap0へ接続されているような状態になります。
+
+TAPを用いたネットワークの構成方法
+前述の状態になった仮想NICでは、IPアドレスが適切に設定されていればホストOSとゲストOS間の通信が問題なく行えるようになります。
+しかしながら、このままではホストとの間でしか通信が出来ず、インターネットやLAN上の他ノードに接続する方法がありません(2)。
+これを解決するには、ホストOS側に標準的に搭載されているネットワーク機能を利用します。
+１つの方法は、既に紹介したブリッジを使う方法で、TAPと物理NICをデータリンクレイヤで接続し、物理NICの接続されているネットワークにTAPを参加させることです。
+しかしながら、WiFiでは仕様によりブリッジが動作しないという制限があったり、LANから1つの物理PCに対して複数のIP付与が許可されていない環境で使う場合など、ブリッジ以外の方法でゲストのネットワークを運用したい場合があります。
+この場合は、NATを使ってホストOSでアドレス変換を行った上でIPレイヤでルーティングを行います。
+bhyveではこれらの設定を自動的に行う仕組みを特に提供しておらず(3)、TAPにbhyveを接続する機能だけを備えているので、自分でコンフィグレーションを行う必要があります。
+リスト３，４に設定例を示します。
+
+cloned_interfaces="bridge0 tap0"
+autobridge_interfaces="bridge0"
+autobridge_bridge0="em0 tap*"
+ifconfig_bridge0="up"
+リスト3，ブリッジの場合
+
+firewall_enable="YES" firewall_type="OPEN" natd_enable="YES" natd_interface="em0" gateway_enable="YES" cloned_interfaces="tap0" ifconfig_tap0="inet 192.168.100.1/24 up" dnsmasq_enable="YES"
+リスト4，NATの場合
+
+(2) この点においては、2台のPCをLANケーブルで物理的に直接つないている環境と同じです。
+(3) NATを使わずにルーティングだけを行うこともできますが、その場合はLAN上のノードからゲストネットワークへの経路が設定されていなければなりません。一般的にはそのような運用は考えにくいので、NATをつかう事が殆どのケースで適切だと思われます。
+
+
+なお、OpenVPNなどを用いたVPN接続に対してブリッジやNATを行う場合も、ほぼ同じ設定が必要になります。
+
+まとめ
+今回は仮想マシンのネットワークデバイスについて解説しました。
+次回は、仮想マシンのストレージデバイスについて解説します。 
