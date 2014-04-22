@@ -1,0 +1,30 @@
+......(省略)......
+137: static int
+138: vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
+139: 	     struct thread *td)                                     ①
+140: {
+......(省略)......
+234: 	switch(cmd) {
+235: 	case VM_RUN:                                                ②
+236: 		vmrun = (struct vm_run *)data;
+237: 		error = vm_run(sc->vm, vmrun);                          ③
+238: 		break;
+......(省略)......
+371: 	}
+......(省略)......
+382: }
+......(省略)......
+471: static int
+472: sysctl_vmm_create(SYSCTL_HANDLER_ARGS)                         ❶
+473: {
+......(省略)......
+490: 	vm = vm_create(buf);                                        ❷
+517: }
+
+
+
+①  vmmdev_ioctlは/dev/vmm/${name}のioctlハンドラ。
+②  /usr/sbin/bhyveから送られてきたVM_RUN ioctlを受け取る。
+③  vm_run()を呼ぶ。
+❶  hw.vmm.create sysctlにより /dev/vmm/${name}を作成しVMインスタンスを初期化する時に呼び出される。
+❷  vm_createを呼び出す。

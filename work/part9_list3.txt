@@ -1,0 +1,21 @@
+......(省略)......
+ 672:  int
+ 673:  vm_run(struct vm *vm, struct vm_run *vmrun)
+ 674:  {
+......(省略)......
+ 681:  	vcpuid = vmrun->cpuid;
+......(省略)......
+ 686:  	vcpu = &vm->vcpu[vcpuid];
+ 687:  	vme = &vmrun->vm_exit;
+ 688:  	rip = vmrun->rip;
+......(省略)......
+ 701:  	error = VMRUN(vm->cookie, vcpuid, rip);                     (31)
+......(省略)......
+ 709:  	/* copy the exit information */
+ 710:  	bcopy(&vcpu->exitinfo, vme, sizeof(struct vm_exit));        (32)
+......(省略)......
+ 757:  }
+
+
+(31) vmx_runはEXIT_REASON_INOUTをハンドルしてここへ抜けてくる。
+(32) vm_exit構造体の値はユーザランドへの返り値としてここでコピーされる。
