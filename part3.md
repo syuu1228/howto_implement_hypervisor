@@ -149,7 +149,7 @@ I/O-bitmap BはI/Oポー
 ト番号8000HからFFFFHまでを表す同様のテーブルです(図[fig1])。
 
 ![I/O-bitmap と I/O
-アドレス空間](figures/part3_fig1_IO_bitmaps.eps "fig:") [fig1]
+アドレス空間](figures/part3_fig1_IO_bitmaps.png "fig:") [fig1]
 
 これらの設定でI/Oアクセス時のVMExitを有効に
 し、ゲストOSがデバイスドライバ経由でI/Oポート へアクセスを行うと、VMExit
