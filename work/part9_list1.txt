@@ -1,0 +1,89 @@
+......(省略)......
+1197:  static int
+1198:  vmx_exit_process(struct vmx *vmx, int vcpu, struct vm_exit *vmexit)
+1199:  {
+1200:  	int error, handled;
+1201:  	struct vmcs *vmcs;
+1202:  	struct vmxctx *vmxctx;
+1203:  	uint32_t eax, ecx, edx;
+1204:  	uint64_t qual, gla, gpa, cr3, intr_info;
+1205:  
+1206:  	handled = 0;
+1207:  	vmcs = &vmx->vmcs[vcpu];
+1208:  	vmxctx = &vmx->ctx[vcpu];
+1209:  	qual = vmexit->u.vmx.exit_qualification;                    (20)
+1210:  	vmexit->exitcode = VM_EXITCODE_BOGUS;
+1211:  
+1212:  	switch (vmexit->u.vmx.exit_reason) {
+......(省略)......
+1286:  	case EXIT_REASON_INOUT:                                     (21)
+1287:  		vmexit->exitcode = VM_EXITCODE_INOUT;                   (22)
+1288:  		vmexit->u.inout.bytes = (qual & 0x7) + 1;               (23)
+1289:  		vmexit->u.inout.in = (qual & 0x8) ? 1 : 0;              (24)
+1290:  		vmexit->u.inout.string = (qual & 0x10) ? 1 : 0;         (25)
+1291:  		vmexit->u.inout.rep = (qual & 0x20) ? 1 : 0;            (26)
+1292:  		vmexit->u.inout.port = (uint16_t)(qual >> 16);          (27)
+1293:  		vmexit->u.inout.eax = (uint32_t)(vmxctx->guest_rax);    (28)
+1294:  		break;
+......(省略)......
+1310:  	default:
+1311:  		break;
+1312:  	}
+......(省略)......
+1351:  	return (handled);                                           (29)
+1352:  }
+1353:  
+1354:  static int
+1355:  vmx_run(void *arg, int vcpu, register_t rip)
+1356:  {
+......(省略)......
+1394:  	do {
+......(省略)......
+1398:  		rc = vmx_setjmp(vmxctx);                                (13)
+......(省略)......
+1402:  		switch (rc) {
+......(省略)......
+1411:  		case VMX_RETURN_LONGJMP:                                (14)
+1412:  			break;			/* vm exit */
+......(省略)......
+1436:  		}
+1437:  		
+1438:  		/* enable interrupts */
+1439:  		enable_intr();
+1440:  
+1441:  		/* collect some basic information for VM exit processing */
+1442:  		vmexit->rip = rip = vmcs_guest_rip();                   (15)
+1443:  		vmexit->inst_length = vmexit_instruction_length();      (16)
+1444:  		vmexit->u.vmx.exit_reason = exit_reason = vmcs_exit_reason();   (17)
+1445:  		vmexit->u.vmx.exit_qualification = vmcs_exit_qualification();   (18)
+......(省略)......
+1455:  		handled = vmx_exit_process(vmx, vcpu, vmexit);          (19)
+1456:  		vmx_exit_trace(vmx, vcpu, rip, exit_reason, handled);
+1457:  
+1458:  	} while (handled);                                          (30)
+......(省略)......
+1481:  	return (0);
+......(省略)......
+1490:  }
+
+
+(20) Exit Qualificationを取り出し。
+(21) IO命令でVMExitした場合、Exit Reason 30（EXIT_REASON_INOUT）となる。
+(22) Exit Reasonを代入。
+(23) Exit Qualificationからアクセス幅を代入。
+(24) Exit Qualificationからアクセス方向を代入。
+(25) Exit QualificationからString命令かどうかのフラグを代入。
+(26) Exit Qualificationからrep prefix付きかどうかのフラグを代入。
+(27) Exit Qualificationからポート番号を代入。
+(28) raxレジスタの値を代入。
+(29) EXIT_REASON_INOUTでは、ユーザランドでのエミュレーション処理
+     を要求するためhandled = 0を返す。
+(13) vmx_returnからここへリターンされてくる。
+     返り値としてVMX_RETURN_LONGJMPを返す。
+(14) rcはVMX_RETURN_LONGJMP。
+(15) VMCSからゲストOSのRIPを取得してvm_exit構造体にセット。
+(16) VMCSからRIPが指している命令の命令長を取得してvm_exit構造体にセット。
+(17) VMCSからExit reasonを取得してvm_exit構造体にセット。
+(18) VMCSからExit qualificationを取得してvm_exit構造体にセット。
+(19) vmx_exit_processでExit reasonに応じた処理を実行。
+(30) handled = 0が返ったため、ループを抜けvmx_runから抜ける。
