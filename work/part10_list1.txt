@@ -1,0 +1,19 @@
+......(省略)......
+ 280:  int
+ 281:  vm_run(struct vmctx *ctx, int vcpu, uint64_t rip, struct vm_exit *vmexit)
+ 282:  {
+ 283:  	int error;
+ 284:  	struct vm_run vmrun;
+ 285:  
+ 286:  	bzero(&vmrun, sizeof(vmrun));
+ 287:  	vmrun.cpuid = vcpu;
+ 288:  	vmrun.rip = rip;
+ 289:  
+ 290:  	error = ioctl(ctx->fd, VM_RUN, &vmrun);                     (1)
+ 291:  	bcopy(&vmrun.vm_exit, vmexit, sizeof(struct vm_exit));      (2)
+ 292:  	return (error);
+ 293:  }
+
+
+ (1) 前回の記事の最後でユーザランドへreturnされたioctlはここに戻ってくる。
+ (2) vmm.koから渡されたvmexit情報をコピーしてコール元へ渡す。
