@@ -46,13 +46,8 @@ VM-entry interruption-information field にベクタ
 割り込みを契機としてVMExitを発生させることが
 できます([^1])。ただし、この利用方法は一般的ではあり
 ません。
-[^1]) VMCS の VM-Execution Control Fields の Exception Bitmap
-　　 の各ビットが各例外のベクタ番号に対応していて、ここに1
-　　 を設定するとその例外が発生した時に VMExit が発生するよう
-　　 になります。通常の例外は基本的に VMExit する必要がありま
-　　 せんが、連載第 2 回( Intel VT-x の概要とメモリ仮想化)で解説
-　　 したシャドーページングを行うには、ページフォルト例外で
-　　 の VMExit が必須になります。
+
+[^1]: VMCS の VM-Execution Control Fields の Exception Bitmapの各ビットが各例外のベクタ番号に対応していて、ここに1を設定するとその例外が発生した時に VMExit が発生するようになります。通常の例外は基本的に VMExit する必要がありませんが、連載第 2 回( Intel VT-x の概要とメモリ仮想化)で解説したシャドーページングを行うには、ページフォルト例外での VMExit が必須になります。
 
 ### 外部割り込みの仮想化
 
@@ -154,18 +149,10 @@ root mode/VMX non-root modeの切り替えときにコン
 は、特にハイパーバイザが介入すべき処理はありま
 せん。このためVMExitは発生せず、すべてCPUが
 仮想化を行います。
-[^2]) ただし、割り込みハンドラ内で IO ポートアクセスなどの操作
-　　 を行えば VMExit が発生する操作を行えば、そこでは VMExit
-　　 が発生します。 
-[^3]) VMCS の VM-Execution Control Fields の Secondary
-　　 Processor-Based VM-Execution Controls にある Descriptor-
-　　 table exiting にビットを立てることで、LGDT、LIDT、LLDT、
-　　 LTR、SGDT、SIDT、SLDT、STR の各命令を実行しようとした
-　　 時に VMExit するようになります。 
-[^4]) この場合、ハイパーバイザは ID のシャドーイングを行ってゲ
-　　 スト OS が意図する割り込みハンドラと異なる割り込みハンド
-　　 ラを設定できます。また、 IDTR へのアクセスをイベントとし
-　　 て受け取り、デバッグ機能を実装することもできます。
+
+[^2]: ただし、割り込みハンドラ内で IO ポートアクセスなどの操作を行えば VMExit が発生する操作を行えば、そこでは VMExitが発生します。 
+[^3]: VMCS の VM-Execution Control Fields の SecondaryProcessor-Based VM-Execution Controls にある Descriptor-table exiting にビットを立てることで、LGDT、LIDT、LLDT、LTR、SGDT、SIDT、SLDT、STR の各命令を実行しようとした時に VMExit するようになります。 
+[^4]: この場合、ハイパーバイザは ID のシャドーイングを行ってゲスト OS が意図する割り込みハンドラと異なる割り込みハンドラを設定できます。また、 IDTR へのアクセスをイベントとして受け取り、デバッグ機能を実装することもできます。
 
 ## Local APIC の仮想化
 
@@ -226,8 +213,8 @@ Spaceへの書き込みにより割り込み先CPUの設定を
 受け取ります。書き込むデバイスやレジスタの
 フォーマットは違いますが 、使い方はほぼI/O
 APICと変わりません。
-[^5]) 参考資料
-　　 ( http://d.hatena.ne.jp/syuu1228/20120105/1325757315 )
+
+[^5]: 参考資料( http://d.hatena.ne.jp/syuu1228/20120105/1325757315 )
 
 ## 物理ハードウェアからの割り込みへの対処
 

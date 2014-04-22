@@ -37,11 +37,11 @@ while(<>) {
 	print "```\n\n";
     } elsif (/^▼図 (\d+)\s+(.+)$/) {
 	print "\n![$2](figures/part${part}_fig$1.png \"図$1\")\n\n";
-    } elsif (/^注 (\d+) \) (.+)$/) {
+    } elsif (/^注 ?(\d+) ?\) (.+)$/) {
 	print "\n[^$1]: $2";
 	while (<>) {
 	    last if(/^$/);
-	    if (/^注 (\d+) \) (.+)$/){
+	    if (/^注 ?(\d+) ?\) (.+)$/){
 		print "\n[^$1]: $2";
 		next;
 	    }
