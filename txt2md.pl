@@ -48,6 +48,7 @@ while(<>) {
 	}
 	print "\n";
     } elsif (/^(①|②|③|④|⑤|⑥|⑦|⑧|⑨) (.+)$/) {
+	print "\n" if ($1 eq "①");
 	print chr(ord(substr($1,2))+ord("1")-ord(substr("①",2))),". $2";
 	while (<>) {
 	    if (/^$/) {
