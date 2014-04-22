@@ -1,0 +1,57 @@
+......(省略)......
+  72:  int
+  73:  emulate_inout(struct vmctx *ctx, int vcpu, int in, int port, int bytes,
+  74:  	      uint32_t *eax, int strict)
+  75:  {
+  76:  	int flags;
+  77:  	uint32_t mask;
+  78:  	inout_func_t handler;
+  79:  	void *arg;
+  80:  
+  81:  	assert(port < MAX_IOPORTS);
+  82:  
+  83:  	handler = inout_handlers[port].handler;                     (8)
+  84:  
+  85:  	if (strict && handler == default_inout)
+  86:  		return (-1);
+  87:  
+  88:  	if (!in) {
+  89:  		switch (bytes) {
+  90:  		case 1:
+  91:  			mask = 0xff;
+  92:  			break;
+  93:  		case 2:
+  94:  			mask = 0xffff;
+  95:  			break;
+  96:  		default:
+  97:  			mask = 0xffffffff;
+  98:  			break;
+  99:  		}
+ 100:  		*eax = *eax & mask;
+ 101:  	}
+ 102:  
+ 103:  	flags = inout_handlers[port].flags;
+ 104:  	arg = inout_handlers[port].arg;
+ 105:  
+ 106:  	if ((in && (flags & IOPORT_F_IN)) || (!in && (flags & IOPORT_F_OUT)))
+ 107:  		return ((*handler)(ctx, vcpu, in, port, bytes, eax, arg));  (9)
+ 108:  	else
+ 109:  		return (-1);
+ 110:  }
+......(省略)......
+ 141:  int
+ 142:  register_inout(struct inout_port *iop)                       (10)
+ 143:  {
+ 144:  	assert(iop->port < MAX_IOPORTS);
+ 145:  	inout_handlers[iop->port].name = iop->name;
+ 146:  	inout_handlers[iop->port].flags = iop->flags;
+ 147:  	inout_handlers[iop->port].handler = iop->handler;
+ 148:  	inout_handlers[iop->port].arg = iop->arg;
+ 149:  
+ 150:  	return (0);
+ 151:  }
+
+
+(8) ポート番号ごとに登録されているIOポートハンドラを取り出す。
+(9) ポート番号ごとに登録されているハンドラを取り出す。
+(10) IOポートハンドラはregister_inout()で登録されている。

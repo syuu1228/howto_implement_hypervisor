@@ -1,0 +1,101 @@
+......(省略)......
+ 294:  static int
+ 295:  vmexit_inout(struct vmctx *ctx, struct vm_exit *vme, int *pvcpu)
+ 296:  {
+ 297:  	int error;
+ 298:  	int bytes, port, in, out;
+ 299:  	uint32_t eax;
+ 300:  	int vcpu;
+ 301:  
+ 302:  	vcpu = *pvcpu;
+ 303:  
+ 304:  	port = vme->u.inout.port;                                   (6)
+ 305:  	bytes = vme->u.inout.bytes;
+ 306:  	eax = vme->u.inout.eax;
+ 307:  	in = vme->u.inout.in;
+ 308:  	out = !in;
+ 309:  
+......(省略)......
+ 322:  	error = emulate_inout(ctx, vcpu, in, port, bytes, &eax, strictio);  (7)
+ 323:  	if (error == 0 && in)                                       (16)
+ 324:  		error = vm_set_register(ctx, vcpu, VM_REG_GUEST_RAX, eax);
+ 325:  
+ 326:  	if (error == 0)
+ 327:  		return (VMEXIT_CONTINUE);                               (17)
+ 328:  	else {
+ 329:  		fprintf(stderr, "Unhandled %s%c 0x%04x\n",
+ 330:  			in ? "in" : "out",
+ 331:  			bytes == 1 ? 'b' : (bytes == 2 ? 'w' : 'l'), port);
+ 332:  		return (vmexit_catch_inout());
+ 333:  	}
+ 334:  }
+......(省略)......
+ 508:  static vmexit_handler_t handler[VM_EXITCODE_MAX] = {
+ 509:  	[VM_EXITCODE_INOUT]  = vmexit_inout,                        (5)
+ 510:  	[VM_EXITCODE_VMX]    = vmexit_vmx,
+ 511:  	[VM_EXITCODE_BOGUS]  = vmexit_bogus,
+ 512:  	[VM_EXITCODE_RDMSR]  = vmexit_rdmsr,
+ 513:  	[VM_EXITCODE_WRMSR]  = vmexit_wrmsr,
+ 514:  	[VM_EXITCODE_MTRAP]  = vmexit_mtrap,
+ 515:  	[VM_EXITCODE_PAGING] = vmexit_paging,
+ 516:  	[VM_EXITCODE_SPINUP_AP] = vmexit_spinup_ap,
+ 517:  };
+ 518:  
+ 519:  static void
+ 520:  vm_loop(struct vmctx *ctx, int vcpu, uint64_t rip)
+ 521:  {
+......(省略)......
+ 532:  	while (1) {                                                 (19)
+ 533:  		error = vm_run(ctx, vcpu, rip, &vmexit[vcpu]);          (3)
+ 534:  		if (error != 0) {
+ 535:  			/*
+ 536:  			 * It is possible that 'vmmctl' or some other process
+ 537:  			 * has transitioned the vcpu to CANNOT_RUN state right
+ 538:  			 * before we tried to transition it to RUNNING.
+ 539:  			 *
+ 540:  			 * This is expected to be temporary so just retry.
+ 541:  			 */
+ 542:  			if (errno == EBUSY)
+ 543:  				continue;
+ 544:  			else
+ 545:  				break;
+ 546:  		}
+ 547:  
+ 548:  		prevcpu = vcpu;
+ 549:                  rc = (*handler[vmexit[vcpu].exitcode])(ctx, &vmexit[vcpu],
+ 550:                                                         &vcpu);       (4)
+ 551:  		switch (rc) {
+ 552:                  case VMEXIT_SWITCH:
+ 553:  			assert(guest_vcpu_mux);
+ 554:  			if (vcpu == -1) {
+ 555:  				stats.cpu_switch_rotate++;
+ 556:  				vcpu = fbsdrun_get_next_cpu(prevcpu);
+ 557:  			} else {
+ 558:  				stats.cpu_switch_direct++;
+ 559:  			}
+ 560:  			/* fall through */
+ 561:  		case VMEXIT_CONTINUE:
+ 562:                          rip = vmexit[vcpu].rip + vmexit[vcpu].inst_length;   (18)
+ 563:  			break;
+ 564:  		case VMEXIT_RESTART:
+ 565:                          rip = vmexit[vcpu].rip;
+ 566:  			break;
+ 567:  		case VMEXIT_RESET:
+ 568:  			exit(0);
+ 569:  		default:
+ 570:  			exit(1);
+ 571:  		}
+ 572:  	}
+ 573:  	fprintf(stderr, "vm_run error %d, errno %d\n", error, errno);
+ 574:  }
+
+
+(6) VMExit時にvmm.koが取得した、in/out命令のエミュレーションに必要な情報（ポート番号、アクセス幅、書き込み値（読み込み時は不要）、IO方向（in／out））を展開する。
+(7) デバイスエミュレータを呼び出す。
+(16) in命令だった場合は読み込んだ結果がゲストのraxレジスタにセットされる。今回はoutなのでここを通らない。
+(17) VMEXIT_CONTINUEがreturnされる。
+(5) VM_EXITCODE_INOUTでVMExitしてきているのでvmexit_inout()が呼ばれる。
+(19) whileループで再びvm_run()が実行され、ゲストマシンが再開される。
+(3) ioctlから抜け、ここに戻ってくる。
+(4) EXITCODEに対応したハンドラーを呼び出す。ここではin/out命令の実行でVMExitしてきたものとして解説を進める。
+(18) ゲストのripを１命令先に進める。
