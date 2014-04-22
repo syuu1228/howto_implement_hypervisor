@@ -216,7 +216,9 @@ Destination Modeでは最大8CPUしかサポートでき
 れる拡張版APICが導入され、アドレス幅は8bitか
 ら32bitへ拡張されました([^3])。
 
-[^1]: これは正確には Logical Flat Model というモードで、他に FlatCluster Model 、 Hierarchical Cluster Model などがありますが、通常使われません。説明は割愛します。注 2 ) Windows ではプロセスごとに TPR の値を制御し、プロセスの優先度に多じて割り込み量を変化させています。一方、 Linuxでは TPR の値は変えずに Lowest Priority を用い、複数の CPUへ割り込みを公平に分散させています。注 3 ) 参考資料 Intel64 Architecture x2APIC Specification( http://www.intel.com/content/dam/doc/specification-update/64-architecture-x2apic-specification.pdf )
+[^1]: これは正確には Logical Flat Model というモードで、他に FlatCluster Model 、 Hierarchical Cluster Model などがありますが、通常使われません。説明は割愛します。
+[^2]: Windows ではプロセスごとに TPR の値を制御し、プロセスの優先度に多じて割り込み量を変化させています。一方、 Linuxでは TPR の値は変えずに Lowest Priority を用い、複数の CPUへ割り込みを公平に分散させています。
+[^3]: 参考資料 Intel64 Architecture x2APIC Specification( http://www.intel.com/content/dam/doc/specification-update/64-architecture-x2apic-specification.pdf )
 
 ## MSI・MSI-X 割り込み
 

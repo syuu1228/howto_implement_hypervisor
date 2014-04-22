@@ -41,6 +41,10 @@ while(<>) {
 	print "\n[^$1]: $2";
 	while (<>) {
 	    last if(/^$/);
+	    if (/^注 (\d+) \) (.+)$/){
+		print "\n[^$1]: $2";
+		next;
+	    }
 	    chomp;
 	    s/^(　)+//;
 	    s/^\s+//;
