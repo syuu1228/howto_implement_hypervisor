@@ -13,7 +13,7 @@ clean:
 	platex $<
 
 %.tex: %.md
-	pandoc $< -s -o $@
+	pandoc $< -s -o $@ -V documentclass=jsarticle -V classoption=a4j
 	mv $@ $@.tmp
 	sed -e s/{article}/{jarticle}/ -e s/\.png/.eps/ $@.tmp > $@
 	rm $@.tmp
