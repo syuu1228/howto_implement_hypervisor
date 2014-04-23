@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  23 APR 2014 23:52
+This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  24 APR 2014 00:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -828,7 +828,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.205 \lthtmlpictureA{tex2html_wrap711}
+l.205 \lthtmlpictureA{tex2html_wrap744}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -836,7 +836,7 @@ or  <return>  to continue without it.
 
 File: figures/part3_fig1_IO_bitmaps.eps Graphic file (type eps)
 <figures/part3_fig1_IO_bitmaps.eps>
-l2hSize :tex2html_wrap711:189.70874pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap744:189.70874pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.

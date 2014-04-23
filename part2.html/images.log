@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  23 APR 2014 23:52
+This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  24 APR 2014 00:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -276,7 +276,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.143 \lthtmlpictureA{tex2html_wrap640}
+l.143 \lthtmlpictureA{tex2html_wrap644}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -284,7 +284,7 @@ or  <return>  to continue without it.
 
 File: figures/part2_fig1.eps Graphic file (type eps)
 <figures/part2_fig1.eps>
-l2hSize :tex2html_wrap640:266.9975pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap644:266.9975pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -348,7 +348,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.151 \lthtmlpictureA{tex2html_wrap660}
+l.151 \lthtmlpictureA{tex2html_wrap664}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -356,7 +356,7 @@ or  <return>  to continue without it.
 
 File: figures/part2_fig2.eps Graphic file (type eps)
 <figures/part2_fig2.eps>
-l2hSize :tex2html_wrap660:216.81pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap664:216.81pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -394,7 +394,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.157 \lthtmlpictureA{tex2html_wrap664}
+l.157 \lthtmlpictureA{tex2html_wrap668}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -406,7 +406,7 @@ Overfull \hbox (105.69875pt too wide) detected at line 160
  [] 
  []
 
-l2hSize :tex2html_wrap664:356.33124pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap668:356.33124pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -457,7 +457,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.164 \lthtmlpictureA{tex2html_wrap669}
+l.164 \lthtmlpictureA{tex2html_wrap673}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -469,7 +469,7 @@ Overfull \hbox (61.53374pt too wide) detected at line 167
  [] 
  []
 
-l2hSize :tex2html_wrap669:295.1025pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap673:295.1025pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -507,7 +507,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.170 \lthtmlpictureA{tex2html_wrap674}
+l.170 \lthtmlpictureA{tex2html_wrap678}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -515,7 +515,7 @@ or  <return>  to continue without it.
 
 File: figures/part2_fig5.eps Graphic file (type eps)
 <figures/part2_fig5.eps>
-l2hSize :tex2html_wrap674:178.76088pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap678:178.76088pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -566,7 +566,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.177 \lthtmlpictureA{tex2html_wrap679}
+l.177 \lthtmlpictureA{tex2html_wrap683}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -578,7 +578,7 @@ Overfull \hbox (105.69875pt too wide) detected at line 180
  [] 
  []
 
-l2hSize :tex2html_wrap679:317.185pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap683:317.185pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -629,7 +629,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.184 \lthtmlpictureA{tex2html_wrap684}
+l.184 \lthtmlpictureA{tex2html_wrap688}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -637,7 +637,7 @@ or  <return>  to continue without it.
 
 File: figures/part2_fig7.eps Graphic file (type eps)
 <figures/part2_fig7.eps>
-l2hSize :tex2html_wrap684:138.45343pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap688:138.45343pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.

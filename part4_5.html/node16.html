@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Bibliography</TITLE>
-<META NAME="description" CONTENT="Bibliography">
+<TITLE>の書き換えでPCIコンフィグレーション空間はどのように書き換わるか</TITLE>
+<META NAME="description" CONTENT="の書き換えでPCIコンフィグレーション空間はどのように書き換わるか">
 <META NAME="keywords" CONTENT="part4_5">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,55 +18,132 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="part4_5.css">
 
-<LINK REL="next" HREF="node17.html">
-<LINK REL="previous" HREF="node7.html">
-<LINK REL="up" HREF="part4_5.html">
+<LINK REL="previous" HREF="node15.html">
+<LINK REL="up" HREF="node7.html">
 <LINK REL="next" HREF="node17.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html194"
+<A NAME="tex2html198"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
  SRC="file:/usr/share/latex2html/icons/next.png"></A> 
-<A NAME="tex2html192"
-  HREF="part4_5.html">
+<A NAME="tex2html196"
+  HREF="node7.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
  SRC="file:/usr/share/latex2html/icons/up.png"></A> 
-<A NAME="tex2html186"
+<A NAME="tex2html192"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
  SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
 <BR>
-<B> Next:</B> <A NAME="tex2html195"
-  HREF="node17.html">About this document ...</A>
-<B> Up:</B> <A NAME="tex2html193"
-  HREF="part4_5.html">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 付属資料 最近のPCアーキテクチャにおける割り込みルーティングの仕組み</A>
-<B> Previous:</B> <A NAME="tex2html187"
+<B> Next:</B> <A NAME="tex2html199"
+  HREF="node17.html">Bibliography</A>
+<B> Up:</B> <A NAME="tex2html197"
+  HREF="node7.html">割り込みルーティング</A>
+<B> Previous:</B> <A NAME="tex2html193"
   HREF="node15.html">Linuxカーネルで実際にレジスタの値を設定している所を見てみる</A>
-<BR><BR>
+<BR>
+<BR>
 <!--End of Navigation Panel-->
- 
-<H2><A NAME="SECTION00050000000000000000">
-Bibliography</A>
-</H2><DL COMPACT><DD><P></P><DT><A NAME="BIOSInit">1</A>
-<DD> BIOSがPCI Expressを初期化する手順が見えてきた: なひたふJTAG日記 <TT><A NAME="tex2html7"
-  HREF="http://nahitafu.cocolog-nifty.com/nahitafu/2007/02/pci_express_2b63.html">http://nahitafu.cocolog-nifty.com/nahitafu/2007/02/pci_express_2b63.html</A></TT>    <P></P><DT><A NAME="I">3</A>
-<DD>ntel® 64 and IA-32 Architectures Software Developer Manuals <TT><A NAME="tex2html8"
-  HREF="http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html">http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html</A></TT>    <P></P><DT><A NAME="I">3</A>
-<DD>ntel® 5520/5500 Chipset: Datasheet <TT><A NAME="tex2html9"
-  HREF="http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html">http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html</A></TT>    <P></P><DT><A NAME="P">5</A>
-<DD>CI Local Bus Specification Revision 3.0
-    <P></P><DT><A NAME="P">5</A>
-<DD>CI Express 2.0 Base Specification Revision 0.9
-</DL>
+
+<H2><A NAME="SECTION00049000000000000000">
+<!-- MATH
+ $/proc/irq/<IRQ>/smp\_affinity$
+ -->
+<IMG
+ WIDTH="251" HEIGHT="29" ALIGN="MIDDLE" BORDER="0"
+ SRC="img7.png"
+ ALT="$/proc/irq/&lt;IRQ&gt;/smp\_affinity$">の書き換えでPCIコンフィグレーション空間はどのように書き換わるか</A>
+</H2>
+例えばThinkpad x200にはこんなデバイスがあります。
+（dmesgから抜粋）
+
+<P>
+<BR>
+<IMG
+ WIDTH="626" HEIGHT="140" ALIGN="BOTTOM" BORDER="0"
+ SRC="img8.png"
+ ALT="\begin{program}[H]\centering
+\begin{verbatim}e1000e: Intel(R) PRO/1000 Network...
+...
+udev[16200]: renamed network interface eth0 to eth4\end{verbatim}
+\end{program}">
+<BR>
+
+<P>
+IRQ44のMSI割り込みを一つ持つe1000eで、PCIのアドレスは00:19.0ですね。
+
+<P>
+<BR>
+<IMG
+ WIDTH="259" HEIGHT="28" ALIGN="BOTTOM" BORDER="0"
+ SRC="img9.png"
+ ALT="\begin{program}[H]\centering
+\begin{verbatim}...">
+<BR>
+
+<P>
+CPUはcpu0とcpu1なので、全てのCPUのビットを立ててるから3。
+
+<P>
+<BR>
+<IMG
+ WIDTH="426" HEIGHT="31" ALIGN="BOTTOM" BORDER="0"
+ SRC="img10.png"
+ ALT="\begin{program}[H]\centering
+\begin{verbatim}...">
+<BR>
+
+<P>
+設定通り、両側のCPUに割り込んでますね。
+この時、MSI Address RegisterとMSI Data Registerにはどのような値が設定されているか確認してみます。
+
+<P>
+<BR>
+<IMG
+ WIDTH="843" HEIGHT="329" ALIGN="BOTTOM" BORDER="0"
+ SRC="img11.png"
+ ALT="\begin{program}[H]\centering
+\begin{verbatim}...">
+<BR>
+「Capabilities: [d0] MSI」の「Address」と「Data」の所ですが、これをビットフィールドと突き合わせて読まないといけません。
+分かりにくいですね。
+なので、lspciを改造してわかり易く表示出来るようにしてみます。
+
+<P>
+こちらが改造後のコード<A NAME="tex2html7"
+  HREF="footnode.html#foot87"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A>になります。
+早速実行してみます。
+<BR>
+<IMG
+ WIDTH="559" HEIGHT="94" ALIGN="BOTTOM" BORDER="0"
+ SRC="img12.png"
+ ALT="\begin{program}[H]\centering
+\begin{verbatim}...">
+<BR>
+
+<P>
+Logical modeでLowpri、destid=3、vector=185になってるのが分かります。
+ここでsmp_affinityを変えてみましょう。
+
+<P>
+<BR>
+<IMG
+ WIDTH="559" HEIGHT="95" ALIGN="BOTTOM" BORDER="0"
+ SRC="img13.png"
+ ALT="\begin{program}[H]\centering
+\begin{verbatim}...">
+<BR>
+dest_idが1に書き換わったのが見て取れます。
 
 <P>
 <BR><HR>
 <ADDRESS>
 Takuya ASADA
-2014-04-23
+2014-04-24
 </ADDRESS>
 </BODY>
 </HTML>
