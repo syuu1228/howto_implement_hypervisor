@@ -151,28 +151,28 @@ BHyVeを試すには、ホストマシンのセットアップ
 図[fig2]にシェルからBHyVeを用いてゲストマシ ンを実行する方法を示します。
 
 ```
-# kldload vmm.ko <------------------------------|(1)カーネルモジュールをロードし、BHyVeを使用可能にする|
-# ls /dev/vmm <----------------------------------------+---------------------------------------------+
-# /usr/sbin/bhyveload -d diskdev -m 1024 guest0 <---+  |(2)vmm.koがロードされると/dev/vmmディレクトリ|
-                                                    |  |が作成される。この状態ではVMインスタンスが存 |
-Consoles: userboot                                  |  |在しないので、ディレクトリは空               |
-                                                    |  +---------------------------------------------+
-FreeBSD/amd64 User boot, Revision 1.1               +---------------------------------------------+
-(root@bhyve, Sat Dec  8 17:35:59 PST 2012)                                                        |
-Loading /boot/defaults/loader.conf                                                                |
-/boot/kernel/kernel text=0xd01c58 data=0x15e9a0+0x2bb490 syms=[0x8+0x14bbd8+0x8+0x1a7a89]         v
-/boot/kernel/virtio.ko size 0x5a90 at 0x1810000        +----------------------------------------------+
-/boot/kernel/if_vtnet.ko size 0xd910 at 0x1816000      |(3) /usr/sbin/bhyveloadはVMインスタンスを作成 |
-/boot/kernel/virtio_pci.ko size 0x6cc0 at 0x1824000    |し、BSDカーネルをディスクイメージから読み込み |
-/boot/kernel/virtio_blk.ko size 0x6b08 at 0x182b000    |ます。そしてVMインスタンスのメモリ領域へロード|
-|                                                      |して起動可能な状態を作る。カーネルをロードする|
-                                                       |プログラムはFreeBSDのブートローダのコードをそ |
-  ______               ____   _____ _____              |のまま使っているため、ブート時に表示されるのと|
- |  ____|             |  _ \ / ____|  __ \             |同じメニューが表示される。しかし、これはホスト|
- | |___ _ __ ___  ___ | |_) | (___ | |  | |            |側で実行されているプログラムでゲストマシンの起|
- |  ___| '__/ _ \/ _ \|  _ < \___ \| |  | |            |動は始まってない。引数-dはディスクイメージ、-m|
- | |   | | |  __/  __/| |_) |____) | |__| |            |はメモリサイズ、最後の引数はVM名を指定している|
- | |   | | |    |    ||     |      |      |            +----------------------------------------------+
+# kldload vmm.ko                                    (1)
+# ls /dev/vmm                                       (2)
+# /usr/sbin/bhyveload -d diskdev -m 1024 guest0     (3)
+
+Consoles: userboot
+
+FreeBSD/amd64 User boot, Revision 1.1
+(root@bhyve, Sat Dec  8 17:35:59 PST 2012)
+Loading /boot/defaults/loader.conf
+/boot/kernel/kernel text=0xd01c58 data=0x15e9a0+0x2bb490 syms=[0x8+0x14bbd8+0x8+0x1a7a89]
+/boot/kernel/virtio.ko size 0x5a90 at 0x1810000
+/boot/kernel/if_vtnet.ko size 0xd910 at 0x1816000
+/boot/kernel/virtio_pci.ko size 0x6cc0 at 0x1824000
+/boot/kernel/virtio_blk.ko size 0x6b08 at 0x182b000
+|
+
+  ______               ____   _____ _____
+ |  ____|             |  _ \ / ____|  __ \
+ | |___ _ __ ___  ___ | |_) | (___ | |  | |
+ |  ___| '__/ _ \/ _ \|  _ < \___ \| |  | |
+ | |   | | |  __/  __/| |_) |____) | |__| |
+ | |   | | |    |    ||     |      |      |
  |_|   |_|  \___|\___||____/|_____/|_____/    ```                       `
                                              s` `.....---.......--```   -/
  ?????????????Welcome to FreeBSD???????????? +o   .--`         /y:`     +.
@@ -189,33 +189,49 @@ Loading /boot/defaults/loader.conf                                              
  ?                                         ?      .--             `--.
  ?                                         ?         .---.....----.
  ???????????????????????????????????????????
-                                                 +---------------------------------------------------+
-Booting...                                       |(4) /usr/sbin/bhyveloadが作成したVMインスタンスは、|
-# ls /dev/vmm <----------------------------------+/dev/vmm以下にデバイスファイルとして表示される     |
-                                                 +---------------------------------------------------+
+
+Booting...
+# ls /dev/vmm                                       (4)
+
 guest0
 # /usr/sbin/bhyve -A -I -m 1024 -s 0:0,virtio-blk,diskdev10 \
--S 31,uart,stdio guest0 <------------------------+----------------------------------------------------+
-                                                 |(5) /usr/sbin/bhyveは/usr/sbin/bhyveloadが初期化    |
-GDB: no debug ports present                      |したVMインスタンスを実行する。引数-mはメモリサイズ、|
-KDB: debugger backends: ddb                      |-sと-SはゲストマシンのPCI上に接続される仮想デバイ   |
-KDB: current backend: ddb                        |ス、最後の引数はVM名を指定している                  |
-Copyright (c) 1992-2012 The FreeBSD Project.     +----------------------------------------------------+
+-S 31,uart,stdio guest0                             (5)
+
+GDB: no debug ports present
+KDB: debugger backends: ddb
+KDB: current backend: ddb
+Copyright (c) 1992-2012 The FreeBSD Project.
 Copyright (c) 1979, 1980, 1983, 1986, 1988, 1991, 1992, 1993, 1994
   The Regents of the University of California. All rights reserved.
-FreeBSD is a registerd trademark of The FreeBSD Foundation.     +------------------------------------+
-FreeBSD 10.0-CURRENT #0 r243948: Thu Dec  6 14:03:56 UTC 2012   |(6) shutdownを行なってbhyveプロセス |
-    root@kaos.glenbarber.us:/usr/obj/usr/src/sys/GENERIC amd64  |を終了した後も、カーネル側にVMインス|
-......(省略)......                                              |タンスの状態が残る                  |
-# ls /dev/vmm <-------------------------------------------------+------------------------------------+
-guest0                                       +----------------------------------------------------------+
-# /usr/sbin/bhyvectl --vm=guest0 --destroy <-+(7) VMインスタンスを削除しゲストメモリを開放するには、これ|
-# ls /dev/vmm <---------------------------+  |を削除する必要がある。/usr/sbin/bhyvectlの--destroyオ     |
-                                          |  |プションを使い、VMインスタンスを削除する                  |
-                                          |  +----------------------------------------------------------+
-                                          +--|(8) VMインスタンスを削除するとデバイスファイルも消去される|
+FreeBSD is a registerd trademark of The FreeBSD Foundation.
+FreeBSD 10.0-CURRENT #0 r243948: Thu Dec  6 14:03:56 UTC 2012
+    root@kaos.glenbarber.us:/usr/obj/usr/src/sys/GENERIC amd64
+......(省略)......
+# ls /dev/vmm                                       (6)
+guest0
+# /usr/sbin/bhyvectl --vm=guest0 --destroy          (7)
+# ls /dev/vmm                                       (8)
 ```
 [fig2]
+
+1. カーネルモジュールをロードし、BHyVeを使用可能にする
+2. vmm.koがロードされると/dev/vmmディレクトリが作成される。
+    この状態ではVMインスタンスが存在しないので、ディレクトリは空
+3. /usr/sbin/bhyveloadはVMインスタンスを作成し、
+    BSDカーネルをディスクイメージから読み込みます。
+    そしてVMインスタンスのメモリ領域へロードして起動可能な状態を作る。
+    カーネルをロードするプログラムはFreeBSDのブートローダのコードをそのまま使っているため、
+    ブート時に表示されるのと同じメニューが表示される。
+    しかし、これはホスト側で実行されているプログラムでゲストマシンの起動は始まってない。
+    引数-dはディスクイメージ、-mはメモリサイズ、最後の引数はVM名を指定している
+4. /usr/sbin/bhyveloadが作成したVMインスタンスは、/dev/vmm以下にデバイスファイルとして表示される
+5. /usr/sbin/bhyveは/usr/sbin/bhyveloadが初期化したVMインスタンスを実行する。
+    引数-mはメモリサイズ、-sと-SはゲストマシンのPCI上に接続される仮想デバイス、最後の引数はVM名を指定している
+6. shutdownを行なってbhyveプロセスを終了した後も、カーネル側にVMインスタンスの状態が残る
+7. VMインスタンスを削除しゲストメモリを開放するには、これを削除する必要がある。
+    /usr/sbin/bhyvectlの--destroyオプションを使い、VMインスタンスを削除する
+8. VMインスタンスを削除するとデバイスファイルも消去される
+
 
 使い方はKVMに似ていますが、VMインスタン
 スの状態がVM実行プログラムと分離されてお
