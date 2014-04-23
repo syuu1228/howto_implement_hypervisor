@@ -20,3 +20,6 @@ clean:
 
 %.epub: %.md
 	pandoc $< -s -o $@ --default-image-extension=.png
+
+%.mobi: %.epub
+	~/kindlegen/kindlegen $<
