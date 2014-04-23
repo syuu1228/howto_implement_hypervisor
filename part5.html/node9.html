@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Local APIC の仮想化</TITLE>
+<META NAME="description" CONTENT="Local APIC の仮想化">
+<META NAME="keywords" CONTENT="part5">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part5.css">
+
+<LINK REL="next" HREF="node10.html">
+<LINK REL="previous" HREF="node8.html">
+<LINK REL="up" HREF="part5.html">
+<LINK REL="next" HREF="node10.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html116"
+  HREF="node10.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html114"
+  HREF="part5.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html108"
+  HREF="node8.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html117"
+  HREF="node10.html">I/O APIC の仮想化</A>
+<B> Up:</B> <A NAME="tex2html115"
+  HREF="part5.html">第 5 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html109"
+  HREF="node8.html">IDT/IDTR と割り込みハンドラ</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00040000000000000000">
+Local APIC の仮想化</A>
+</H1>
+
+<P>
+Local APICはメモリマップドI/Oでアクセスする
+ため、通常のメモリマップドI/Oの仮想化手法が使
+えます。しかし、高速化のためにVT-xにはLocal
+APICへのアクセスを特別扱いしてハンドルする機
+能が実装されています。このことは、連載第3回(I/
+O仮想化「デバイスI/O編」)で解説しました。つま
+り、図1で示したように、部分的にVT-xによる仮想
+化支援を受けることができます。
+ しかしながら、このVT-xによる仮想化支援機能
+はハイパーバイザが何もしなくても完全にCPU側で
+レジスタ値の更新などを行ってくれるというもので
+はありません。 CPUへ外部割り込みを挿入する場合、
+ゲストOSから見てつじつまが合わなくならないよ
+うLocalAPICのレジスタ値を同時に設定する作業は
+ハイパーバイザから行う必要があります。具体的に
+は、次の操作を行います。形になります。実機での
+外部割り込みは、次の手順で処理されます。
+
+<P>
+
+<OL>
+<LI>割り込み発生時点でIRRレジスタに割り込むベクタ番号のビットをセット
+</LI>
+<LI>仮想CPUがVMExitするのを待つ/またはIPIなどを用いてVMExitさせる
+</LI>
+<LI>IRRにセットされた最高優先度のビットをクリア、同じビットをISRにセット
+</LI>
+<LI>TPRとISRの値に基いてPPRを更新
+</LI>
+<LI>VM-entry interruption-information fieldに割り込みをセット
+</LI>
+<LI>VMEnterして割り込みを発生させる
+
+<P>
+</LI>
+</OL>
+
+<P>
+また、割り込みハンドラの終了を通知するために
+ゲストOSがEOIレジスタへ書き込んできたときに
+も、ハイパーバイザの介入が必要です。具体的には、
+次の作業を行います。
+
+<P>
+
+<OL>
+<LI>EOIへの書き込みによりVMExit
+</LI>
+<LI>IRRが0ならVMEnterしてゲストへ復帰?IRRに値があればIRRにセットされた最高優先度のビットをクリア、同じビットをISRにセット
+</LI>
+<LI>TPRとISRの値に基いてPPRを更新
+</LI>
+<LI>VM-entry interruption-information fieldに割り込みをセット
+</LI>
+<LI>VMEnterして割り込みを発生させる
+</LI>
+</OL>
+
+<P>
+こちらも、前回の記事で解説した実機上のLocal
+APICの挙動と同じです。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-23
+</ADDRESS>
+</BODY>
+</HTML>

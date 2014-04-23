@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>MSI/MSI-X 割り込みを用いて割り込む場合</TITLE>
+<META NAME="description" CONTENT="MSI/MSI-X 割り込みを用いて割り込む場合">
+<META NAME="keywords" CONTENT="part5">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part5.css">
+
+<LINK REL="previous" HREF="node6.html">
+<LINK REL="up" HREF="node5.html">
+<LINK REL="next" HREF="node8.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html96"
+  HREF="node8.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html94"
+  HREF="node5.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html90"
+  HREF="node6.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html97"
+  HREF="node8.html">IDT/IDTR と割り込みハンドラ</A>
+<B> Up:</B> <A NAME="tex2html95"
+  HREF="node5.html">外部割り込みの仮想化</A>
+<B> Previous:</B> <A NAME="tex2html91"
+  HREF="node6.html">I/O APIC を通して割り込む場合</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H3><A NAME="SECTION00023200000000000000">
+MSI/MSI-X 割り込みを用いて割り込む場合</A>
+</H3>
+ 実機では、次の手順で処理されます。
+
+<P>
+
+<OL>
+<LI>デバイスがPCI Configuration Spaceに指定されたDestination IDが示すLocal APICへ割り込みを転送
+</LI>
+<LI>Local APICがCPUへ割り込み
+</LI>
+<LI>CPUはIDT上のゲートデスクリプタをロードし、割り込みハンドラを実行
+</LI>
+<LI>割り込みハンドラが外部割り込みを処理
+</LI>
+<LI>割り込みハンドラがLocal APICへEOIを書き込み、割り込み処理の終了を伝達
+</LI>
+<LI>IRET命令で直前のコンテキストへ復帰
+</LI>
+</OL>
+
+<P>
+MSI/MSI-X割り込みを用いる場合の違いは、割
+り込み先がI/O APICのRedirection Table Entryに
+書いてあるのではなく、PCI Configuration Spaceに
+書いてある、という点だけです。これを仮想化する
+場合、ハイパーバイザで宛先の仮想CPUを選択する
+ときの参照先が変わりますが、あとはI/O APICを
+通じた割り込みと同じです。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-23
+</ADDRESS>
+</BODY>
+</HTML>

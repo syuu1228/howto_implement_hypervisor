@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>物理ハードウェアからの割り込みへの対処</TITLE>
+<META NAME="description" CONTENT="物理ハードウェアからの割り込みへの対処">
+<META NAME="keywords" CONTENT="part5">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part5.css">
+
+<LINK REL="next" HREF="node13.html">
+<LINK REL="previous" HREF="node11.html">
+<LINK REL="up" HREF="part5.html">
+<LINK REL="next" HREF="node13.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html146"
+  HREF="node13.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html144"
+  HREF="part5.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html138"
+  HREF="node11.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html147"
+  HREF="node13.html">まとめ</A>
+<B> Up:</B> <A NAME="tex2html145"
+  HREF="part5.html">第 5 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html139"
+  HREF="node11.html">MSI/MSI-X 割り込みの仮想化</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00070000000000000000">
+物理ハードウェアからの割り込みへの対処</A>
+</H1>
+
+<P>
+VMX non-root modeの実行中に物理ハードウェア
+から割り込みが来た場合、ハイパーバイザでこれを
+受け取り割り込みハンドラを起動して処理する必要
+があります。このために、ハイパーバイザはVMCS
+の初期化時にVM-Execution Control FieldsのPin-
+Based VM-Execution ControlsにあるExternal-
+interrupt exitingにビットをセットします。これによ
+り、ゲストマシンは外部割り込み発生時にVMExit
+するようになります。また、VM-Exit Control Fieldsに
+あるVM-Exit ControlsのAcknowledge interrupt on
+exitビットを1に設定した場合、外部割り込みは
+VMExit時に"acknowledged"になり、割り込みベク
+タ番号はVM-Exit information fieldsのVM-exit
+interruption informationに保存されます。VMMはこ
+のベクタ番号を参照して、割り込みハンドラを起動
+し割り込みを処理します。
+ 一方、Acknowledge interrupt on exitビットを0に
+設定した場合は割り込みは"acknowledge"されず、
+RFLAGSレジスタのIFビットでマスクされている
+状態になります。このままIFフラグをセットすれ
+ば、 IDTに設定された割り込みハンドラが起動して割
+り込みを処理できます。通常のOSの上にハイパー
+バイザを実装する方式では、 IDTによる割り込みハン
+ドルが行われているため、後者の方法を取る場合が
+ほとんどです。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-23
+</ADDRESS>
+</BODY>
+</HTML>

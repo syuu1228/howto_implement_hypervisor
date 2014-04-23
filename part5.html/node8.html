@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2012 (1.2)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>IDT/IDTR と割り込みハンドラ</TITLE>
+<META NAME="description" CONTENT="IDT/IDTR と割り込みハンドラ">
+<META NAME="keywords" CONTENT="part5">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2012">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="part5.css">
+
+<LINK REL="next" HREF="node9.html">
+<LINK REL="previous" HREF="node2.html">
+<LINK REL="up" HREF="part5.html">
+<LINK REL="next" HREF="node9.html">
+</HEAD>
+
+<BODY >
+<!--Navigation Panel-->
+<A NAME="tex2html106"
+  HREF="node9.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="file:/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html104"
+  HREF="part5.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="file:/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html98"
+  HREF="node7.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="file:/usr/share/latex2html/icons/prev.png"></A>   
+<BR>
+<B> Next:</B> <A NAME="tex2html107"
+  HREF="node9.html">Local APIC の仮想化</A>
+<B> Up:</B> <A NAME="tex2html105"
+  HREF="part5.html">第 5 回 I/O</A>
+<B> Previous:</B> <A NAME="tex2html99"
+  HREF="node7.html">MSI/MSI-X 割り込みを用いて割り込む場合</A>
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00030000000000000000">
+IDT/IDTR と割り込みハンドラ</A>
+</H1>
+
+<P>
+IDT/IDTRや割り込みハンドラに関しては、とくに
+ハイパーバイザが介入すべき処理はありません。この
+ためVMExitは発生せず、すべてCPUが仮想化を行
+います<A NAME="tex2html4"
+  HREF="footnode.html#foot39"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A>。
+VT-x において一部の汎用レジスタはVMX
+root mode/VMX non-root modeの切り替えときにコン
+テキストをハイパーバイザで保存する必要がありまし
+た。しかし、IDTRレジスタのコンテキスト保存/復
+帰については、ハイパーバイザは関与しません。
+ これは、CPUによって行われるためです。ゲスト
+マシン上のIDTの作成や割り込みハンドラのアドレ
+スの設定は、通常のメモリアクセアスと同様に行わ
+れます。また、VT-x non-root mode では、実機での
+動作と同様に割り込みや例外を受け付け、割り込み
+ハンドラを実行する機能が備わっています。ゲスト
+マシンのIDTRは、 IDTの構築後に設定されます。な
+お、一般的な手法ではありませんが、VMCSの設
+定<A NAME="tex2html5"
+  HREF="footnode.html#foot40"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A>によりIDTRへの読み書きを契機としてVMExit
+を発生させることもできます<A NAME="tex2html6"
+  HREF="footnode.html#foot41"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A>。
+ このうち、2<code>~</code>4でハイパーバイザの介入が不要
+であることは、すでに説明しました。1ですが、ゲ
+スト環境から内部を発生させ、割り込みハンドラを
+起動する処理の中で、とくにハイパーバイザの介入
+は必要ありません。
+ ただし、ここでもVMCSの設定により、内部割り
+込みを契機としてVMExitを発生できま。この場合、
+内部割り込みをゲストOSに渡さずハイパーバイザ
+で横取りして処理をしたり、デバッグ機能としてゲ
+スト環境上の内部割り込みの回数をカウントしたり
+といった機能を実装できます。しかしながら、その
+ような使い方は一般的ではありません。
+ まとめると、内部割り込みの一連の処理に関して
+は、特にハイパーバイザが介入すべき処理はありま
+せん。このためVMExitは発生せず、すべてCPUが
+仮想化を行います。
+
+<P>
+<BR><HR>
+<ADDRESS>
+Takuya ASADA
+2014-04-23
+</ADDRESS>
+</BODY>
+</HTML>

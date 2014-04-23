@@ -25,7 +25,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DL>
-<DT><A NAME="foot15">...しかし、x86アーキテクチャではユーザ権限で実行可能である（＝トラップされない）にもかかわらず、センシティブな命令というものが複数あります。このため、このアーキテクチャ上でハイパーバイザを実装するには効率性をある程度犠牲にしてセンシティブな命令の実行を回避し、適切な処理に置き換える必要がありました</A><A
+<DT><A NAME="foot20">...しかし、x86アーキテクチャではユーザ権限で実行可能である（＝トラップされない）にもかかわらず、センシティブな命令というものが複数あります。このため、このアーキテクチャ上でハイパーバイザを実装するには効率性をある程度犠牲にしてセンシティブな命令の実行を回避し、適切な処理に置き換える必要がありました</A><A
  HREF="node2.html#tex2html2"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
  SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A></DT>
 <DD>効率を気にしなければ、ゲストマシン上で実行されるすべての命令をエミュレートすればどのような命令セットでも問題なくゲストマシンを実行できます。これは「エミュレータ」と呼ばれ、異なるアーキテクチャのコンピュータをゲストとして実行するのには必要ですが、同じアーキテクチャのコンピュータをゲストとして実行する場合には効率が非常に悪いです。x86アーキテクチャのエミュレータとしてQEMUが有名ですが、QEMUとVT-xを用いるハイパーバイザのLinuxKVMの実行速度を比較してみてください。かなり差があるはずです。
@@ -62,7 +62,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 .
 </PRE>
 </DD>
-<DT><A NAME="foot19">... 4が出荷されました</A><A
+<DT><A NAME="foot24">... 4が出荷されました</A><A
  HREF="node5.html#tex2html3"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
  SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A></DT>
 <DD>その後、AMDも同様の機能をAMD-Vとして出してきており、そのような技術の総称としてこれらは「ハードウェア仮想化支援機能」と呼ばれています。本記事では、解説がややこしくなることを避けるために、敢えて「Intel VT」に絞って解説を行いますが、基本的にAMD-Vも同じようなしくみを提供しています。
@@ -99,7 +99,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 .
 </PRE>
 </DD>
-<DT><A NAME="foot20">...これにより、前述のような工夫を行う場合に比べて、より単純なハイパーバイザ実装で仮想化が実現できるようになりました。しかもより実機に近い性能が得られるように発展しました</A><A
+<DT><A NAME="foot25">...これにより、前述のような工夫を行う場合に比べて、より単純なハイパーバイザ実装で仮想化が実現できるようになりました。しかもより実機に近い性能が得られるように発展しました</A><A
  HREF="node5.html#tex2html4"><SUP><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
  SRC="file:/usr/share/latex2html/icons/footnote.png"></SUP></A></DT>
 <DD>とくにXenの場合は、Xenサポートを実装したWindowsがリリースされなかったため、VTーxに対応して未書き換えなOSを動作可能にさせる意義がありました。
