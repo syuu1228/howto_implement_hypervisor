@@ -38,42 +38,78 @@ virtio~b~lk~o~uthdrにはバッファ長のフィールドがありませんが�
 /usr/sbin/bhyveはvirtio-blkを通じてゲストOSからディスクIOリクエストを受け取り、ディスクイメージへ読み書きを行います。bhyveが対応するディスクイメージはRAW形式のみなので、ディスクイメージへの読み書きはとても単純です。ゲストOSから指定されたオフセット値とバッファ長をそのまま用いてディスクイメージへ読み書きを行えばよいだけです。
 それでは、このディスクイメージへのIOの部分についてbhyveのコードを実際に確認してみましょう。/usr/sbin/bhyveの仮想ディスクIO処理のコードをコードリスト１に示します。
 
-/\* ゲストOSからIO要求があった時に呼ばれる \*/ static void
-pci~v~tblk~p~roc(struct pci~v~tblk~s~oftc \*sc, struct vqueue~i~nfo
-\*vq)
+```
+/* ゲストOSからIO要求があった時に呼ばれる */
+static void
+pci_vtblk_proc(struct pci_vtblk_softc *sc, struct vqueue_info *vq)
+{
+	struct virtio_blk_hdr *vbh;
+	uint8_t *status;
+	int i, n;
+	int err;
+	int iolen;
+	int writeop, type;
+	off_t offset;
+	struct iovec iov[VTBLK_MAXSEGS + 2];
+	uint16_t flags[VTBLK_MAXSEGS + 2];
+	/* iovに１リクエスト分のDescriptorを取り出し */
+	n = vq_getchain(vq, iov, VTBLK_MAXSEGS + 2, flags);
+					〜 略 〜 	/* 一つ目のDescriptorはstruct virtio_blk_outhdr */
+	vbh = iov[0].iov_base; 	/* 最後のDescriptorはステータスコード */
+	status = iov[--n].iov_base;
+					〜 略 〜
+	/* リクエストの種類 */ 	type = vbh->vbh_type;
+	writeop = (type == VBH_OP_WRITE);
+	/* オフセットをsectorからbyteに変換 */
+	offset = vbh->vbh_sector * DEV_BSIZE;
+	/* バッファの合計長 */
+	iolen = 0;
+	for (i = 1; i < n; i++) {
+					〜 略 〜
+		iolen += iov[i].iov_len;
+	}
+					〜 略 〜
+	switch (type) {
+	/* WRITEならpwritev()でiovの配列で表されるバッファリストからディスクイメージへ書き込み */
+	case VBH_OP_WRITE:
+		err = pwritev(sc->vbsc_fd, iov + 1, i - 1, offset);
+		break;
+	/* READならpreadv()でディスクイメージからiovの配列で表されるバッファリストへ読み込み */
+	case VBH_OP_READ:
+		err = preadv(sc->vbsc_fd, iov + 1, i - 1, offset);
+		break;
+	/* IDENTなら仮想ディスクのidentifyを返す */
+	case VBH_OP_IDENT:
+		/* Assume a single buffer */
+		strlcpy(iov[1].iov_base, sc->vbsc_ident,
+		    min(iov[1].iov_len, sizeof(sc->vbsc_ident)));
+		err = 0;
+		break;
+	default:
+		err = -ENOSYS;
+		break;
+	}
+					〜 略 〜
+	/* ステータスコードのアドレスにIOの結果を書き込む */
+	if (err < 0) {
+		if (err == -ENOSYS)
+			*status = VTBLK_S_UNSUPP;
+		else
+			*status = VTBLK_S_IOERR;
+	} else
+		*status = VTBLK_S_OK;
 
-struct virtio~b~lk~h~dr \*vbh; uint8~t~ \*status; int i, n; int err; int
-iolen; int writeop, type; off~t~ offset; struct iovec iov[VTBLK~M~AXSEGS
-+ 2]; uint16~t~ flags[VTBLK~M~AXSEGS + 2]; /\*
-iovに１リクエスト分のDescriptorを取り出し \*/ n = vq~g~etchain(vq, iov,
-VTBLK~M~AXSEGS + 2, flags); 〜 略 〜  /\* 一つ目のDescriptorはstruct
-virtio~b~lk~o~uthdr \*/ vbh = iov[0].iov~b~ase;  /\*
-最後のDescriptorはステータスコード \*/ status = iov[–n].iov~b~ase; 〜 略
-〜 /\* リクエストの種類 \*/  type = vbh-\>vbh~t~ype; writeop = (type ==
-VBH~O~P~W~RITE); /\* オフセットをsectorからbyteに変換 \*/ offset =
-vbh-\>vbh~s~ector \* DEV~B~SIZE; /\* バッファの合計長 \*/ iolen = 0; for
-(i = 1; i \< n; i++) <span> 〜 略 〜 iolen += iov[i].iov~l~en; </span>
-〜 略 〜 switch (type) <span> /\*
-WRITEならpwritev()でiovの配列で表されるバッファリストからディスクイメージへ書き込み
-\*/ case VBH~O~P~W~RITE: err = pwritev(sc-\>vbsc~f~d, iov + 1, i - 1,
-offset); break; /\*
-READならpreadv()でディスクイメージからiovの配列で表されるバッファリストへ読み込み
-\*/ case VBH~O~P~R~EAD: err = preadv(sc-\>vbsc~f~d, iov + 1, i - 1,
-offset); break; /\* IDENTなら仮想ディスクのidentifyを返す \*/ case
-VBH~O~P~I~DENT: /\* Assume a single buffer \*/ strlcpy(iov[1].iov~b~ase,
-sc-\>vbsc~i~dent, min(iov[1].iov~l~en, sizeof(sc-\>vbsc~i~dent))); err =
-0; break; default: err = -ENOSYS; break; </span> 〜 略 〜 /\*
-ステータスコードのアドレスにIOの結果を書き込む \*/ if (err \< 0) <span>
-if (err == -ENOSYS) \*status = VTBLK~SU~NSUPP; else \*status =
-VTBLK~SI~OERR; </span> else \*status = VTBLK~SO~K;
-
-〜 略 〜 /\* ステータスコードを書き込んだ事を通知 \*/ vq~r~elchain(vq,
-1);
-
+					〜 略 〜
+	/* ステータスコードを書き込んだ事を通知 */
+	vq_relchain(vq, 1);
+}
+```
 コードリスト１，/usr/sbin/bhyveの仮想ディスクIO処理
 
-まとめ 今回は仮想マシンのストレージデバイスについて解説しました。
-次回は、仮想マシンのコンソールデバイスについて解説します。￼
-NICではOSから何もリクエストを送らなくてもネットワーク上の他のノードからパケットが届くのでデータが送られてきます。このため、必ずOSからリクエストを送ってから届くというような処理にはなりません。￼
-Virtqueue上でデータ転送をおこなうための構造体。第１２回のVirtqueueの項目を参照。￼
-QCOW2形式などのより複雑なフォーマットでは未使用領域を圧縮するため、ゲスト・ホスト間でオフセット値が一致しなくなり、またメタデータを持つ必要が出てくるのでRAWイメージと比較して複雑な実装になります。
+(1) NICではOSから何もリクエストを送らなくてもネットワーク上の他のノードからパケットが届くのでデータが送られてきます。このため、必ずOSからリクエストを送ってから届くというような処理にはなりません。
+(2) Virtqueue上でデータ転送をおこなうための構造体。第１２回のVirtqueueの項目を参照。
+(3) QCOW2形式などのより複雑なフォーマットでは未使用領域を圧縮するため、ゲスト・ホスト間でオフセット値が一致しなくなり、またメタデータを持つ必要が出てくるのでRAWイメージと比較して複雑な実装になります。
+
+## まとめ
+今回は仮想マシンのストレージデバイスについて解説しました。
+次回は、仮想マシンのコンソールデバイスについて解説します。
