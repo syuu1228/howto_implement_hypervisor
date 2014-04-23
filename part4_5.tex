@@ -120,12 +120,108 @@ smp\_affinityの書き換え時には、Destination IDとInterrupt Vectorだけ�
 全ての環境でLogical modeかつLowest priorityが使えるとは限らないので、場合によってはPhysical Modeで初期化されていてsmp\_affinityの値を0xffにしてもCPU0にしか割り込まないという挙動を行う事も有り得る。
 実際、論理CPUが12個あるCore i7上でLinux 3.2.0+を走らせている環境ではExtended Physical Modeで初期化されていて、割り込み分散が行われていなかった。
 
+\subsection{$/proc/irq/<IRQ>/smp\_affinity$の書き換えでPCIコンフィグレーション空間はどのように書き換わるか}
+例えばThinkpad x200にはこんなデバイスがあります。
+（dmesgから抜粋）
+
+\begin{program}[H]\centering
+\begin{verbatim}
+e1000e: Intel(R) PRO/1000 Network Driver - 1.5.1-k
+e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+e1000e 0000:00:19.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
+e1000e 0000:00:19.0: setting latency timer to 64
+e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
+e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:1f:16:2a:a4:59
+e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 1008FF-0FF
+udev[16200]: renamed network interface eth0 to eth4
+\end{verbatim}
+\end{program}
+
+IRQ44のMSI割り込みを一つ持つe1000eで、PCIのアドレスは00:19.0ですね。
+
+\begin{program}[H]\centering
+\begin{verbatim}
+# cat /proc/irq/44/smp_affinity
+3
+\end{verbatim}
+\end{program}
+
+CPUはcpu0とcpu1なので、全てのCPUのビットを立ててるから3。
+
+\begin{program}[H]\centering
+\begin{verbatim}
+# grep eth4 /proc/interrupts 
+ 44:      50037      49330   PCI-MSI-edge      eth4
+\end{verbatim}
+\end{program}
+
+設定通り、両側のCPUに割り込んでますね。
+この時、MSI Address RegisterとMSI Data Registerにはどのような値が設定されているか確認してみます。
+
+\begin{program}[H]\centering
+\begin{verbatim}
+# lspci -vvvv -s 00:19.0
+00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network Connection (rev 03)
+	Subsystem: Lenovo Device 20ee
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+	Interrupt: pin A routed to IRQ 44
+	Region 0: Memory at f2600000 (32-bit, non-prefetchable) [size=128K]
+	Region 1: Memory at f2625000 (32-bit, non-prefetchable) [size=4K]
+	Region 2: I/O ports at 1840 [size=32]
+	Capabilities: [c8] Power Management version 2
+		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+		Address: 00000000fee0300c  Data: 41b9
+	Capabilities: [e0] PCI Advanced Features
+		AFCap: TP+ FLR+
+		AFCtrl: FLR-
+		AFStatus: TP-
+	Kernel driver in use: e1000e
+	Kernel modules: e1000e
+\end{verbatim}
+\end{program}
+「Capabilities: [d0] MSI」の「Address」と「Data」の所ですが、これをビットフィールドと突き合わせて読まないといけません。
+分かりにくいですね。
+なので、lspciを改造してわかり易く表示出来るようにしてみます。
+
+こちらが改造後のコード\footnote{\url{https://gist.github.com/1568777}}になります。
+早速実行してみます。
+\begin{program}[H]\centering
+\begin{verbatim}
+# gcc -lpci msireg.c
+# ./a.out 00:19.0
+Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
+address_hi=0
+address_lo=fee0300c dest_mode=logical redirection=lowpri dest_id=3
+data=41b9 trigger=edge level=assert delivery_mode=lowpri vector=185
+\end{verbatim}
+\end{program}
+
+Logical modeでLowpri、destid=3、vector=185になってるのが分かります。
+ここでsmp\_affinityを変えてみましょう。
+
+\begin{program}[H]\centering
+\begin{verbatim}
+# echo 1 > /proc/irq/44/smp_affinity
+# ./a.out 00:19.0
+Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
+address_hi=0
+address_lo=fee0100c dest_mode=logical redirection=lowpri dest_id=1
+data=41b9 trigger=edge level=assert delivery_mode=lowpri vector=185
+\end{verbatim}
+\end{program}
+dest\_idが1に書き換わったのが見て取れます。
+
 \begin{thebibliography}{5}
     \bibitem{BIOSInit} BIOSがPCI Expressを初期化する手順が見えてきた: なひたふJTAG日記 \url{http://nahitafu.cocolog-nifty.com/nahitafu/2007/02/pci_express_2b63.html}
-    \bibitem Intel® 64 and IA-32 Architectures Software Developer Manuals \url{http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html}
-    \bibitem Intel® 5520/5500 Chipset: Datasheet \url{http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html}
-    \bibitem PCI Local Bus Specification Revision 3.0
-    \bibitem PCI Express 2.0 Base Specification Revision 0.9
+    \bibitem{} Intel® 64 and IA-32 Architectures Software Developer Manuals \url{http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html}
+    \bibitem{} Intel® 5520/5500 Chipset: Datasheet \url{http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html}
+    \bibitem{} PCI Local Bus Specification Revision 3.0
+    \bibitem{} PCI Express 2.0 Base Specification Revision 0.9
 \end{thebibliography}
 
 \end{document}
