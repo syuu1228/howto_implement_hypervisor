@@ -140,7 +140,7 @@ VMインスタンス管理ツールとして/usr/sbin/bhyvectl が提供され�
 初期化や実行をします。libvmmapiはmmapやioctlを
 発行し、vmm.koが提供するデバイスを操作します。 全体図を図1に示します。
 
-![BHyVeの構成](figures/part6_fig1.png "fig:") [fig1]
+![BHyVeの構成](figures/part6_fig1 "fig:") [fig1]
 
 BHyVeの使い方
 =============

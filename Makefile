@@ -13,13 +13,10 @@ clean:
 	platex $<
 
 %.tex: %.md
-	pandoc $< -s -o $@ -V documentclass=jsarticle -V classoption=a4j
-	mv $@ $@.tmp
-	sed -e s/{article}/{jarticle}/ -e s/\.png/.eps/ $@.tmp > $@
-	rm $@.tmp
+	pandoc $< -s -o $@ -V documentclass=jsarticle -V classoption=a4j --default-image-extension=.eps
 
 %.html: %.md
-	pandoc $< -s -o $@
+	pandoc $< -s -o $@ --default-image-extension=.png
 
 %.epub: %.md
-	pandoc $< -s -o $@
+	pandoc $< -s -o $@ --default-image-extension=.png

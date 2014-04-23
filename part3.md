@@ -154,7 +154,7 @@ I/O-Bitmap Address BにI/O-bitmap AとI/O-bitmap Bのアドレスを設定しま
 I/O-bitmap BはI/Oポー
 ト番号8000HからFFFFHまでを表す同様のテーブルです(図[fig1])。
 
-![I/O-bitmap と I/Oアドレス空間](figures/part3_fig1.png "fig:") [fig1]
+![I/O-bitmap と I/Oアドレス空間](figures/part3_fig1 "fig:") [fig1]
 
 これらの設定でI/Oアクセス時のVMExitを有効に
 し、ゲストOSがデバイスドライバ経由でI/Oポート へアクセスを行うと、VMExit

@@ -24,7 +24,7 @@ Architectures@Popekという今から40年ほど前に発表された論文で�
 
 内容を簡単に説明すると、システム資源の構成を変えようとする命令やシステム資源の構成に動作が依存している命令（「センシティブな命令」と呼ばれる）がユーザモードで実行されるときには、これがトラップされなければならない、ということを言っています（図[fig1]）。
 
-![センシティブな命令](figures/part1_fig1.png "fig:") [fig1]
+![センシティブな命令](figures/part1_fig1 "fig:") [fig1]
 
 なぜかということをもう少し説明します。この論文では、ハイパーバイザの構成法として、ゲストマシン上のユーザランドプログラム・カーネルプログラムをユーザモードで動作させ、センシティブ命令をトラップしてハイパーバイザで適切なエミュレーション処理を行うことにより、ゲストマシンへ仮想的なコンピュータの状態を提供することを意図しています。
 
@@ -71,7 +71,7 @@ Intel VT-x の概要
 Root Mode、「ゲストマシンのモード」をVMX non Root
 Modeと呼びます（図[fig2]）。
 
-![VMX non Root Mode](figures/part1_fig2.png "fig:") [fig2]
+![VMX non Root Mode](figures/part1_fig2 "fig:") [fig2]
 
 先ほど紹介したVMwareやXenのアプローチとは異なり、VT-xではゲストOSにVMX
 non Root Mode上でセンシティブな命令をそのまま実行させます。
@@ -87,7 +87,7 @@ Modeでトラップ可能にして「PopekとGoldbergの仮想化要件」を満
 RootModeへ切り替えることをVMEntry、VMX non RootModeが中断されVMX Root
 Modeへ戻ってくることをVMExitと呼びます（図[fig3]）。
 
-![VMEntry、VMExit](figures/part1_fig3.png "fig:") [fig3]
+![VMEntry、VMExit](figures/part1_fig3 "fig:") [fig3]
 
 センシティブな命令以外でも、一般的なハイパーバイザではCPU外部のハードウェアから割り込みがかかったときにも、ハイパーバイザ側で割り込みをハンドルするためにVMX
 non Root
@@ -184,7 +184,7 @@ fields”に書き込まれたVMExit要因を調べ、要因に合わせたエ�
 以上のように、VMX non Root
 Modeでのゲストマシン実行とVMExit要因ごとのエミュレーション処理を繰り返すことにより、仮想化環境が実現されます（図[fig4]）。
 
-![VT-x のライフサイクル](figures/part1_fig4.png "fig:") [fig4]
+![VT-x のライフサイクル](figures/part1_fig4 "fig:") [fig4]
 
 まとめ
 ======

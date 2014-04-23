@@ -56,7 +56,7 @@
 
 このようになります。
 
-    ![I/O-bitmap と I/O アドレス空間](figures/part3_fig1.png "図1")
+    ![I/O-bitmap と I/O アドレス空間](figures/part3_fig1 "図1")
 
 
 

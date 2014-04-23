@@ -56,7 +56,7 @@ bhyveloadを実行すると、/dev/vmm/へVMインスタ
 を受けてCPUをVT-x non root modeへ切り替えゲ
 ストOSを実行します(VMEntry)。
 
-![VM_RUN ioctl による仮想 CPU の実行イメージ](figures/part7_fig1.png "図1")
+![VM_RUN ioctl による仮想 CPU の実行イメージ](figures/part7_fig1 "図1")
 
 VMX non root modeでハイパーバイザの介入が必
 要な何らかのイベントが発生すると制御がvmm.koへ

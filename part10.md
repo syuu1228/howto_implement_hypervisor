@@ -17,7 +17,7 @@ svn co -r245673 svn://svn.freebsd.org/base/head src
 
  /usr/sbin/bhyveは仮想CPUの数だけスレッドを起動し、それぞれのスレッドが/dev/vmm/${name}に対してVM_RUN ioctlを発行します(図[fig1])。vmm.koはioctlを受けてCPUをVMX non root modeへ切り替えゲストOSを実行します(VMEntry)。
 
-![VM_RUN ioctl による仮想 CPU の実行イメージ](figures/part10_fig1.png "図1")
+![VM_RUN ioctl による仮想 CPU の実行イメージ](figures/part10_fig1 "図1")
 
 VMX non root modeでハイパーバイザの介入が必要な何らかのイベントが発生すると制御がvmm.koへ戻され、イベントがトラップされます(VMExit)。
 イベントの種類が/usr/sbin/bhyveでハンドルされる必要のあるものだった場合、ioctlはリターンされ、制御が/usr/sbin/bhyveへ移ります。/usr/sbin/bhyveはイベントの種類やレジスタの値などを参照し、デバイスエミュレーションなどの処理を行います。
