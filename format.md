@@ -1,3 +1,8 @@
+### 公式ドキュメント
+
+詳しくは[こちら](http://sky-y.github.io/site-pandoc-jp/users-guide/)を参照すること。
+
+
 ### タイトル
 
 先頭のタイトルは
