@@ -2,16 +2,12 @@
 # Associate internals original text with physical files.
 
 
-$key = q/tab1/;
-$ref_files{$key} = "$dir".q|node6.html|; 
-$noresave{$key} = "$nosave";
-
 $key = q/tab4/;
 $ref_files{$key} = "$dir".q|node10.html|; 
 $noresave{$key} = "$nosave";
 
-$key = q/tab2/;
-$ref_files{$key} = "$dir".q|node7.html|; 
+$key = q/tab1/;
+$ref_files{$key} = "$dir".q|node6.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/tab3/;
@@ -20,6 +16,10 @@ $noresave{$key} = "$nosave";
 
 $key = q/fig1/;
 $ref_files{$key} = "$dir".q|node6.html|; 
+$noresave{$key} = "$nosave";
+
+$key = q/tab2/;
+$ref_files{$key} = "$dir".q|node7.html|; 
 $noresave{$key} = "$nosave";
 
 1;

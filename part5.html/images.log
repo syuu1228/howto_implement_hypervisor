@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  23 APR 2014 23:39
+This is pdfTeX, Version 3.1415926-2.6-1.40.14 (TeX Live 2014/dev) (format=latex 2014.4.20)  23 APR 2014 23:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -276,7 +276,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.143 \lthtmlpictureA{tex2html_wrap387}
+l.143 \lthtmlpictureA{tex2html_wrap396}
                                        %
 Your command was ignored.
 Type  I <command> <return>  to replace it with another command,
@@ -288,7 +288,7 @@ Overfull \hbox (108.70999pt too wide) detected at line 146
  [] 
  []
 
-l2hSize :tex2html_wrap387:225.84375pt::0.0pt::349.0pt.
+l2hSize :tex2html_wrap396:225.84375pt::0.0pt::349.0pt.
 
 ! LaTeX Error: The font size command \normalsize is not defined:
                there is probably something wrong with the class file.
@@ -438,10 +438,10 @@ Package rerunfilecheck Info: Checksums for `images.out':
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 157.
  ) 
 Here is how much of TeX's memory you used:
- 4668 strings out of 495035
- 70503 string characters out of 6181703
- 141079 words of memory out of 5000000
- 7882 multiletter control sequences out of 15000+600000
+ 4669 strings out of 495035
+ 70522 string characters out of 6181703
+ 141118 words of memory out of 5000000
+ 7883 multiletter control sequences out of 15000+600000
  3640 words of font info for 14 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  29i,5n,21p,219b,321s stack positions out of 5000i,500n,10000p,200000b,80000s

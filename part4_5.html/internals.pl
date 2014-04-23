@@ -6,11 +6,11 @@ $key = q/cite_BIOSInit/;
 $ref_files{$key} = "$dir".q|node16.html|; 
 $noresave{$key} = "$nosave";
 
-$key = q/cite_P/;
+$key = q/cite_I/;
 $ref_files{$key} = "$dir".q|node16.html|; 
 $noresave{$key} = "$nosave";
 
-$key = q/cite_I/;
+$key = q/cite_P/;
 $ref_files{$key} = "$dir".q|node16.html|; 
 $noresave{$key} = "$nosave";
 
