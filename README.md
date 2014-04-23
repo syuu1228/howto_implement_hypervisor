@@ -1,6 +1,6 @@
 Software Design誌の連載「ハイパーバイザの作り方」の原稿公開用リポジトリ
 ==========================
-こちらは記事のPDF・HTML作成用元データです。
+こちらは記事のPDF・HTML・epub作成用元データです。
 公開中の記事を読みたい方は[こちら](http://syuu1228.github.io/howto_implement_hypervisor/)。
 
 # ファイルの配置
