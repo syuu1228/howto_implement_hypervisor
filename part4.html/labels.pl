@@ -10,16 +10,16 @@ $key = q/cite_interrupt-routing/;
 $external_labels{$key} = "$URL/" . q|node11.html|; 
 $noresave{$key} = "$nosave";
 
+$key = q/fig2/;
+$external_labels{$key} = "$URL/" . q|node5.html|; 
+$noresave{$key} = "$nosave";
+
 $key = q/cite_x2APIC/;
 $external_labels{$key} = "$URL/" . q|node11.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/table2/;
 $external_labels{$key} = "$URL/" . q|node7.html|; 
-$noresave{$key} = "$nosave";
-
-$key = q/fig2/;
-$external_labels{$key} = "$URL/" . q|node5.html|; 
 $noresave{$key} = "$nosave";
 
 $key = q/table1/;
@@ -33,8 +33,12 @@ $noresave{$key} = "$nosave";
 # labels from external_latex_labels array.
 
 
-$key = q/fig2/;
-$external_latex_labels{$key} = q|2|; 
+$key = q//;
+$external_latex_labels{$key} = q|\fi|; 
+$noresave{$key} = "$nosave";
+
+$key = q/_newlabelxx/;
+$external_latex_labels{$key} = q|\ifx|; 
 $noresave{$key} = "$nosave";
 
 $key = q/table1/;
@@ -47,6 +51,10 @@ $noresave{$key} = "$nosave";
 
 $key = q/fig1/;
 $external_latex_labels{$key} = q|1|; 
+$noresave{$key} = "$nosave";
+
+$key = q/fig2/;
+$external_latex_labels{$key} = q|2|; 
 $noresave{$key} = "$nosave";
 
 1;

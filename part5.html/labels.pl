@@ -21,6 +21,10 @@ $key = q/tab1/;
 $external_latex_labels{$key} = q|1|; 
 $noresave{$key} = "$nosave";
 
+$key = q/_/;
+$external_latex_labels{$key} = q|<|; 
+$noresave{$key} = "$nosave";
+
 $key = q/fig1/;
 $external_latex_labels{$key} = q|1|; 
 $noresave{$key} = "$nosave";
