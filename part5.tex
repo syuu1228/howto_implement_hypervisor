@@ -282,10 +282,7 @@ OSの初期化時に割り込み先CPUの設定をメモリ
 Spaceへの書き込みにより割り込み先CPUの設定を
 受け取ります。書き込むデバイスやレジスタの
 フォーマットは違いますが 、使い方はほぼI/O
-APICと変わりません。\footnote{
-参考資料(\href{http://d.hatena.ne.jp/syuu1228/20120105/1325757315}{http://d.hatena.ne.jp/syuu1228/20120105/1325757315})
-}　　 
-
+APICと変わりません\cite{interrupt-routing}。
 
 \section{物理ハードウェアからの割り込みへの対処}
 
@@ -327,5 +324,8 @@ RFLAGSレジスタのIFビットでマスクされている
 Copyright (c) 2014 Takuya ASADA.
 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。
 
+\begin{thebibliography}{4}
+  \bibitem{interrupt-routing} 最近のPCアーキテクチャにおける割り込みルーティングの仕組み \url{http://syuu1228.github.io/howto_implement_hypervisor/part4_5.pdf}
+\end{thebibliography}
 
 \end{document}
