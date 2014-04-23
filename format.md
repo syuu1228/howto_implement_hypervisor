@@ -6,12 +6,12 @@
 
 次のように変換します。
 
-    \documentclass[a4j,12pt]{jarticle}
-    \usepackage[dvips]{graphicx}
+    \input{preamble}
     \title{第 3 回 I/O 仮想化「デバイス I/O 編」}
     \author{Takuya ASADA syuu@dokukino.com}
     \begin{document}
     \maketitle
+
 
 また文章の終わりに次の文を追加します。
 
@@ -31,14 +31,21 @@
 
 ### 節
 
-\subsectionで囲みます。
+\subsection*で囲みます。
 
     シリアルポートの受信処理
 
 次のようになります。
 
-    \subsection{シリアルポートの受信処理}
+    \subsection*{シリアルポートの受信処理}
+    
+### 小節
 
+\subsubsection*
+
+次のようになります。
+
+    \subsubsection*{I/O APIC を通して割り込む場合}    
 
 ### ソースコード
 
@@ -48,7 +55,7 @@
 
 例
 
-    \begin{figure}
+    \begin{program}\centering
     \begin{verbatim}
     
     unsigned char read_com1(void) {
@@ -57,8 +64,8 @@
     }
     
     \end{verbatim}
-    \caption{▼リスト 1  シリアルポートの受信処理}
-    \end{figure}
+    \caption{シリアルポートの受信処理}
+    \end{program}
 
 ### 図
 
@@ -84,7 +91,7 @@
 
     EPTでもシャドーペー
     ジングの場合と同様にオーバーヘッドが発生しま
-    す。\footnote[3]{
+    す。\footnote{
     EPT が一般的にシャドーページングより高い性能が出せない
     という意味ではなく、メモリーマップド I/O に限っては性能が
     変わらないという意味です。
@@ -98,7 +105,7 @@
     \begin{enumerate}
     
     \item{ページフォルト例外発生時のRIP
-      \footnote[2]{
+      \footnote{
       RIP は実行中の命令のアドレスを持つレジスタ。 32bit モードでは EIP と呼ばれます。
       }
     をVMCSのGuest-State AreaのRIPフィールドから取得}
@@ -112,12 +119,36 @@
 
 works/tablesに.xlsx形式で置いてあります（但し、まだ欠品があります）。
 
-
-    \begin{table}
-    \begin{tabular}{|l|l|} \hline
+    \begin{table}\centering
+    \begin{tabular}{|p{4.5cm}|p{10cm}|} \hline
+    
+    ビットポジション & 内容 \\
+    \hline
+    7:00 & 割り込みベクタ番号 \\
+    \hline
+    10:08 & 割り込みタイプ(0 =外部割り込み、2 = NMI、3 =ハードウェア例外、6 =ソフトウェア例外) \\
+    \hline
+    11 & Error code が正常 \\
+    \hline
+    12 & IRET による NMI ブロック解除 \\
+    \hline
+    30:13:00 & Reserved \\
+    \hline
+    31 & VM-exit interruption information が正常 \\
+    \hline
+    
+    
+    
     \end{tabular}
-    \caption{▼表 1   Exit Reason 30 のときの Exit qualification}
+    \caption{VM-exit interruption information}
+    \label{tab2}
     \end{table}
+
+### リンク
+
+\hrefを使います。
+
+    \href{http://d.hatena.ne.jp/syuu1228/20120105/1325757315}{http://d.hatena.ne.jp/syuu1228/20120105/1325757315}
     
 ### ライセンス
 
@@ -128,4 +159,5 @@ works/tablesに.xlsx形式で置いてあります（但し、まだ欠品があ
 ### その他
 
 * アンダースコアとシャープは先頭に\\をつけます。
+* ~は、1\verb|~|3と書きます。
 
