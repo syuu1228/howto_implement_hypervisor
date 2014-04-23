@@ -8,7 +8,7 @@ Software Design誌の連載「ハイパーバイザの作り方」の原稿公�
 - 各回の図データ : work/figures/partX_figX.*
 - 各回の表データ : work/tables/partX.*
 - 公開用Markdownデータ(pandoc, utf8) : partX.md
-- 公開用TeXデータに貼る図データ(eps,png) : figures/partX_figX.*
+- 公開用Markdownデータに貼る図データ(eps,png) : figures/partX_figX.*
 
 # ビルド方法
 - texliveベースのplatex環境とpandoc環境をセットアップしてmakeコマンドを実行（※新しいファイルを追加した場合はMakefileにも追加して下さい）。
