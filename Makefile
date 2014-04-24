@@ -13,13 +13,13 @@ clean:
 	platex $<
 
 %.tex: %.md
-	pandoc $< -s -o $@ -V documentclass=jsarticle -V classoption=a4j --default-image-extension=.eps
+	pandoc $< -s -o $@ -V documentclass=jsarticle -V classoption=a4j --default-image-extension=.eps --filter pandoc-citeproc
 
 %.html: %.md
-	pandoc $< -s -o $@ --default-image-extension=.png
+	pandoc $< -s -o $@ --default-image-extension=.png --filter pandoc-citeproc
 
 %.epub: %.md
-	pandoc $< -s -o $@ --default-image-extension=.png
+	pandoc $< -s -o $@ --default-image-extension=.png --filter pandoc-citeproc
 
 %.mobi: %.epub
 	~/kindlegen/kindlegen $<

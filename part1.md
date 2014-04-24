@@ -9,7 +9,7 @@ title: |
 はじめに
 ========
 
-初めまして、浅田拓也（@syuu1228）です。本号より「ハイパーバイザの作り方」と題して、ハイパーバイザの内部の実装やその土台となるハードウェア側の仮想化支援技術の詳細について解説を行なっていきます。よろしくお付き合いお願い致します。
+初めまして、浅田拓也（\@syuu1228）です。本号より「ハイパーバイザの作り方」と題して、ハイパーバイザの内部の実装やその土台となるハードウェア側の仮想化支援技術の詳細について解説を行なっていきます。よろしくお付き合いお願い致します。
 
 x86アーキテクチャにおける仮想化の歴史と仮想化手法
 =================================================
@@ -18,9 +18,7 @@ x86アーキテクチャにおける仮想化の歴史と仮想化手法
 
 さらに、サーバとしてもユースケースによってはハードウェア性能に余裕が出てきたことにより、ここに仮想化を導入して複数のサーバインスタンスを1つの物理サーバで実行することが現実的な選択肢になってきました。
 
-しかしながら、x86アーキテクチャは仮想化が困難なアーキテクチャとして知られていました。Formal
-Requirements for Virtualizable Third Generation
-Architectures@Popekという今から40年ほど前に発表された論文で、ハイパーバイザを実装するのに必要な命令セットアーキテクチャ上の要件として「PopekとGoldbergの仮想化要件」というものが定義されています。
+しかしながら、x86アーキテクチャは仮想化が困難なアーキテクチャとして知られていました。@Popek という今から40年ほど前に発表された論文で、ハイパーバイザを実装するのに必要な命令セットアーキテクチャ上の要件として「PopekとGoldbergの仮想化要件」というものが定義されています。
 
 内容を簡単に説明すると、システム資源の構成を変えようとする命令やシステム資源の構成に動作が依存している命令（「センシティブな命令」と呼ばれる）がユーザモードで実行されるときには、これがトラップされなければならない、ということを言っています（図[fig1]）。
 
@@ -174,7 +172,7 @@ VMExitで復帰対象になっていないレジスタを(4)で退避された�
 
 VMCSの“VM-exit information
 fields”に書き込まれたVMExit要因を調べ、要因に合わせたエミュレーション処理を行います。特権レジスタへの読み書きであればレジスタの挙動をエミュレーションする必要がありますし、ハードウェアへのI/O命令であれば対象のハードウェアの挙動をエミュレーションする必要があります。
-どのようなイベントでVMExitを発生させることができるのかについては@SDMを参照してください。
+どのようなイベントでVMExitを発生させることができるのかについては @SDM を参照してください。
 
 また、この時、次回のVMEntryが異なるCPUから実行される可能性がある場合は、必ずVMCLEAR命令を実行してCPUからVMCSのアドレスをクリアしなければなりません。これは、VMCLEAR命令を実行するまではVMCSのデータがメモリへライトバックされていることが保証されないためです。
 
@@ -204,15 +202,24 @@ Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
 
-<span>4</span> Formal Requirements for Virtualizable Third Generation
-Architectures
-<http://www.dc.uba.ar/materias/so/2010/verano/descargas/articulos/VM-requirements.pdf>
-Intel(R) 64 and IA-32 Architectures Software Developer Manuals
-<http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html/>
-
 [^1]: 効率を気にしなければ、ゲストマシン上で実行されるすべての命令をエミュレートすればどのような命令セットでも問題なくゲストマシンを実行できます。これは「エミュレータ」と呼ばれ、異なるアーキテクチャのコンピュータをゲストとして実行するのには必要ですが、同じアーキテクチャのコンピュータをゲストとして実行する場合には効率が非常に悪いです。x86アーキテクチャのエミュレータとしてQEMUが有名ですが、QEMUとVT-xを用いるハイパーバイザのLinuxKVMの実行速度を比較してみてください。かなり差があるはずです。
 
 [^2]: その後、AMDも同様の機能をAMD-Vとして出してきており、そのような技術の総称としてこれらは「ハードウェア仮想化支援機能」と呼ばれています。本記事では、解説がややこしくなることを避けるために、敢えて「Intel
     VT」に絞って解説を行いますが、基本的にAMD-Vも同じようなしくみを提供しています。
 
 [^3]: とくにXenの場合は、Xenサポートを実装したWindowsがリリースされなかったため、VTーxに対応して未書き換えなOSを動作可能にさせる意義がありました。
+
+参考文献
+========
+---
+references:
+- id: Popek
+  title: Formal Requirements for Virtualizable Third Generation Architectures
+  URL: 'http://www.dc.uba.ar/materias/so/2010/verano/descargas/articulos/VM-requirements.pdf'
+  issued:
+   year: 1974
+   month: 7
+- id: SDM
+  title: Intel(R) 64 and IA-32 Architectures Software Developer Manuals
+  URL: 'http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'
+...
