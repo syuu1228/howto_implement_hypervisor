@@ -69,7 +69,7 @@ IDTの各エントリはGate Descriptorと呼ばれる
 (Ringの値)、リアルモード・プロテクトモードの設
 定などいくつかのパラメータを含みます(図1)。
 
-![IDT 、IDTR、Gate descriptorの関係](figures/part4_fig1.eps)
+![IDT 、IDTR、Gate descriptorの関係](figures/part4_fig1)
 
 IDTに用いられるGate DescriptorにはTask gate descriptor/Interrupt gate
 descriptor/Trap gate descriptorの3種類があります。しかし、Task gate
@@ -116,7 +116,7 @@ PICは互換性のためのみに存在するようになりました。APICはC
 ごとに存在し、CPUに内蔵さ れているLocal APICと、ICH
 (Southbridge)に内蔵されているI/O APICから構成されています(図2)。
 
-![Local APIC と I/O APIC、外部デバイスの関係](figures/part4_fig2.eps)
+![Local APIC と I/O APIC、外部デバイスの関係](figures/part4_fig2)
 
 Local APICは、ローカル割り込みのベクタ番号設
 定、割り込みベクタ番号通知、EOI (割り込み終了)通
