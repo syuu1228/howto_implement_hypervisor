@@ -9,7 +9,7 @@ title: |
 はじめに
 ========
 
-Linuxにおける/proc/irq/\<IRQ\>/smp\_affinityはハードウェアにどのような設定を行うことにより実現されているのか、或いは最近のPCアーキテクチャにおける割り込みの仕組みはどうなっているのか、という辺りが知りたかったので調べてみた。
+Linuxにおける/proc/irq/\<IRQ\>/smp_affinityはハードウェアにどのような設定を行うことにより実現されているのか、或いは最近のPCアーキテクチャにおける割り込みの仕組みはどうなっているのか、という辺りが知りたかったので調べてみた。
 
 結構こんがらがっているので、予想外に時間を食ってしまった…まだ調べ尽くせていないが、一旦現時点での理解を書いておこうと思う。
 
@@ -23,7 +23,7 @@ Linuxにおける/proc/irq/\<IRQ\>/smp\_affinityはハードウェアにどの�
 
 3.  Legacyな8259割り込みコントローラを使うことは考慮しない
 
-4.  x86\_64向けLinuxカーネル（解析に使っているバージョンは3.2.0+）が動作している
+4.  x86_64向けLinuxカーネル（解析に使っているバージョンは3.2.0+）が動作している
 
 5.  仮想化は使用しない
 
@@ -76,7 +76,7 @@ MSI-X割り込み
 Capability Structure
 --------------------
 
-@BIOSInitを見るとイメージが分かると思うが、Configuration SpaceからLinked
+@BIOSInit を見るとイメージが分かると思うが、Configuration SpaceからLinked
 List状に複数のcapabilityが繋がる構造になっていて、CAPIDが0xd0なのがMSIのフィールドで、ここにはMSICTL,
 MSIAR, MSIDRの3つのレジスタがある。
 
@@ -168,37 +168,35 @@ Vectorに割り込み先LAPICのVector番号を指定。
 Linuxカーネルで実際にレジスタの値を設定している所を見てみる
 -----------------------------------------------------------
 
-msi\_compose\_msg[^1]でレジスタに書き込みたい値を用意しているので、これを見てみる。
-$msg->address\_lo$がMSIARレジスタで、$apic->irq\_dest\_mode$が0ならphysical
+msi_compose_msg[^1]でレジスタに書き込みたい値を用意しているので、これを見てみる。
+msg->address_loがMSIARレジスタで、apic->irq_dest_modeが0ならphysical
 mode、1ならlogical
-modeを設定、$apic->irq\_delivery\_mode$がdest\_LowestPrioならRedirectable（MSI\_ADDR\_REDIRECTION\_LOWPRI）を、そうでなければDirected（MSI\_ADDR\_REDIRECTION\_CPU）を設定、変数destをDestination
+modeを設定、apic->irq_delivery_modeがdest_LowestPrioならRedirectable（MSI_ADDR_REDIRECTION_LOWPRI）を、そうでなければDirected（MSI_ADDR_REDIRECTION_CPU）を設定、変数destをDestination
 IDとして設定している。
 
-$msg->data$がMSIDRレジスタで、$apic->irq\_delivery\_mode$がdest\_LowestPrioならLowest
-priorityを、そうでなければFixedを設定、$cfg->vector$の値をInterrupt
+msg->dataがMSIDRレジスタで、apic->irq_delivery_modeがdest_LowestPrioならLowest
+priorityを、そうでなければFixedを設定、cfg->vectorの値をInterrupt
 Vectorとして設定している。
 
-$apic->irq\_dest\_mode$と$apic->irq\_delivery\_mode$の値はIO
-APICのドライバ毎に違うのだが、x86\_64の標準ドライバのapic\_flat\_64.c[^2]ではirq\_dest\_modeは1,
-irq\_delivery\_modeはdest\_LowestPrioに設定されている。
+apic->irq_dest_modeとapic->irq_delivery_modeの値はIO
+APICのドライバ毎に違うのだが、x86_64の標準ドライバのapic_flat_64.c[^2]ではirq_dest_modeは1,
+irq_delivery_modeはdest_LowestPrioに設定されている。
 
-これらの値は割り込み初期化時に設定され、/proc/irq/\<IRQ\>/smp\_affinityの書き換え時にも維持される。
-smp\_affinityの書き換え時には、Destination IDとInterrupt
+これらの値は割り込み初期化時に設定され、/proc/irq/\<IRQ\>/smp_affinityの書き換え時にも維持される。
+smp_affinityの書き換え時には、Destination IDとInterrupt
 Vectorだけが変更される[^3]。
 
 全ての環境でLogical modeかつLowest
 priorityが使えるとは限らないので、場合によってはPhysical
-Modeで初期化されていてsmp\_affinityの値を0xffにしてもCPU0にしか割り込まないという挙動を行う事も有り得る。
+Modeで初期化されていてsmp_affinityの値を0xffにしてもCPU0にしか割り込まないという挙動を行う事も有り得る。
 実際、論理CPUが12個あるCore i7上でLinux
 3.2.0+を走らせている環境ではExtended Physical
 Modeで初期化されていて、割り込み分散が行われていなかった。
 
-$/proc/irq/<IRQ>/smp\_affinity$の書き換えでPCIコンフィグレーション空間はどのように書き換わるか
+/proc/irq/\<IRQ\>/smp_affinityの書き換えでPCIコンフィグレーション空間はどのように書き換わるか
 ----------------------------------------------------------------------------------------------
 
 例えばThinkpad x200にはこんなデバイスがあります。 （dmesgから抜粋）
-
-[H]
 
     e1000e: Intel(R) PRO/1000 Network Driver - 1.5.1-k
     e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
@@ -212,14 +210,12 @@ $/proc/irq/<IRQ>/smp\_affinity$の書き換えでPCIコンフィグレーショ�
 
 IRQ44のMSI割り込みを一つ持つe1000eで、PCIのアドレスは00:19.0ですね。
 
-[H]
 
     # cat /proc/irq/44/smp_affinity
     3
 
 CPUはcpu0とcpu1なので、全てのCPUのビットを立ててるから3。
 
-[H]
 
     # grep eth4 /proc/interrupts 
      44:      50037      49330   PCI-MSI-edge      eth4
@@ -228,7 +224,6 @@ CPUはcpu0とcpu1なので、全てのCPUのビットを立ててるから3。
 RegisterとMSI Data
 Registerにはどのような値が設定されているか確認してみます。
 
-[H]
 
     # lspci -vvvv -s 00:19.0
     00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network Connection (rev 03)
@@ -259,8 +254,6 @@ MSI」の「Address」と「Data」の所ですが、これをビットフィー
 
 こちらが改造後のコード[^4]になります。 早速実行してみます。
 
-[H]
-
     # gcc -lpci msireg.c
     # ./a.out 00:19.0
     Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
@@ -269,9 +262,8 @@ MSI」の「Address」と「Data」の所ですが、これをビットフィー
     data=41b9 trigger=edge level=assert delivery_mode=lowpri vector=185
 
 Logical modeでLowpri、destid=3、vector=185になってるのが分かります。
-ここでsmp\_affinityを変えてみましょう。
+ここでsmp_affinityを変えてみましょう。
 
-[H]
 
     # echo 1 > /proc/irq/44/smp_affinity
     # ./a.out 00:19.0
@@ -280,17 +272,7 @@ Logical modeでLowpri、destid=3、vector=185になってるのが分かりま�
     address_lo=fee0100c dest_mode=logical redirection=lowpri dest_id=1
     data=41b9 trigger=edge level=assert delivery_mode=lowpri vector=185
 
-dest\_idが1に書き換わったのが見て取れます。
-
-<span>5</span> BIOSがPCI Expressを初期化する手順が見えてきた:
-なひたふJTAG日記
-<http://nahitafu.cocolog-nifty.com/nahitafu/2007/02/pci_express_2b63.html>
-Intel® 64 and IA-32 Architectures Software Developer Manuals
-<http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html>
-Intel® 5520/5500 Chipset: Datasheet
-<http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html>
-PCI Local Bus Specification Revision 3.0 PCI Express 2.0 Base
-Specification Revision 0.9
+dest_idが1に書き換わったのが見て取れます。
 
 [^1]: <http://lxr.linux.no/linux+v3.2/arch/x86/kernel/apic/io_apic.c#L3167>
 
@@ -299,3 +281,29 @@ Specification Revision 0.9
 [^3]: <http://lxr.linux.no/linux+v3.2/arch/x86/kernel/apic/io_apic.c#L3201>
 
 [^4]: <https://gist.github.com/1568777>
+
+ライセンス
+==========
+
+Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
+クリエイティブ・コモンズ 表示 - 継承 4.0 国際
+ライセンスの下に提供されています。
+
+参考文献
+========
+---
+references:
+- id: BIOSInit
+  title: 'BIOSがPCI Expressを初期化する手順が見えてきた:なひたふJTAG日記'
+  URL: 'http://nahitafu.cocolog-nifty.com/nahitafu/2007/02/pci_express_2b63.html'
+- id: SDM
+  title: 'Intel® 64 and IA-32 Architectures Software Developer Manuals'
+  URL: 'http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'
+- id: chipset
+  title: 'Intel® 5520/5500 Chipset: Datasheet'
+  URL: 'http://www.intel.com/content/www/us/en/chipsets/5520-5500-chipset-ioh-datasheet.html'
+- id: PCI3.0
+  title: PCI Local Bus Specification Revision 3.0
+- id: PCIe
+  title: PCI Express 2.0 Base Specification Revision 0.9
+...
