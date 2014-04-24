@@ -1,9 +1,0 @@
-\BOOKMARK [1][-]{section.1}{はじめに}{}% 1
-\BOOKMARK [1][-]{section.2}{x86アーキテクチャにおける仮想化の歴史と仮想化手法}{}% 2
-\BOOKMARK [1][-]{section.3}{VMwareでの実装}{}% 3
-\BOOKMARK [1][-]{section.4}{Xenでの実装}{}% 4
-\BOOKMARK [1][-]{section.5}{仮想化技術の普及}{}% 5
-\BOOKMARK [1][-]{section.6}{Intel VT-x の概要}{}% 6
-\BOOKMARK [1][-]{section.7}{VT-xを用いたハイパーバイザのライフサイクル}{}% 7
-\BOOKMARK [1][-]{section.8}{まとめ}{}% 8
-\BOOKMARK [1][-]{section.9}{ライセンス}{}% 9

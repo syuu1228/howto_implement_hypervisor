@@ -1,9 +1,0 @@
-\BOOKMARK [1][-]{section.1}{はじめに}{}% 1
-\BOOKMARK [1][-]{section.2}{仮想化における内部割り込みと外部割り込み}{}% 2
-\BOOKMARK [1][-]{section.3}{IDT/IDTR と割り込みハンドラ}{}% 3
-\BOOKMARK [1][-]{section.4}{Local APIC の仮想化}{}% 4
-\BOOKMARK [1][-]{section.5}{I/O APIC の仮想化}{}% 5
-\BOOKMARK [1][-]{section.6}{MSI/MSI-X 割り込みの仮想化}{}% 6
-\BOOKMARK [1][-]{section.7}{物理ハードウェアからの割り込みへの対処}{}% 7
-\BOOKMARK [1][-]{section.8}{まとめ}{}% 8
-\BOOKMARK [1][-]{section.9}{ライセンス}{}% 9

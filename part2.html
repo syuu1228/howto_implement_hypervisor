@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel VT-xの概要とメモリ仮想化</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel VT-xの概要とメモリ仮想化</p></h1>
+</div>
+<h1 id="vmcsの構造">VMCSの構造</h1>
+<p>それでは、前回のハイパーバイザのライフサイクルの説明でも度々紹介したハイパーバイザ側のコンフィグレーション情報であるVMCS（Virtual Machine Control Structure）の内部構造（図1）を以下に説明します。</p>
+<div class="figure">
+<img src="figures/part2_fig1.png" alt="VMCSの内部構造" /><p class="caption">VMCSの内部構造</p>
+</div>
+<h2 id="vmcs-revision-identifier" class="unnumbered">VMCS revision identifier</h2>
+<p>VMCS のデータフォーマットのリビジョン番号。VT-x が拡張され、古いCPUと新しいCPUではVMCS のフォーマットが異なる可能性があるため、バージョンチェックのためリビジョンが書き込まれる。ハイパーバイザでサスペンド／レジュームやマイグレーションを実装する時に異なるIntel CPU間でVMCSをセーブ／ロードした時に不整合が発生するのを防ぐことを意図している</p>
+<h2 id="vmcs-abort-indicator" class="unnumbered">VMCS-abort indicator</h2>
+<p>VMExit 中にエラーが発生し、正常にVMExit 要因などのデータがVMCS へ書き込めなかった場合、エラーコードがここに書き込まれる。「VMExit が失敗した場合」なので、正常に動作している限りは使われない</p>
+<h2 id="vmcs-data" class="unnumbered">VMCS data</h2>
+<p>VMCS の本体部分で、通常はこの領域のいずれかのフィールドを読み書きする</p>
+<h2 id="guest-state-area" class="unnumbered">Guest-state area</h2>
+<p>VMExit 時にゲストのレジスタを退避し、VMEntry 時に復帰するための領域です。次のレジスタが保存の対象：</p>
+<ul>
+<li>CR0</li>
+<li>CR3</li>
+<li>CR4</li>
+<li>DR7</li>
+<li>RSP</li>
+<li>RIP</li>
+<li>RFLAGS</li>
+<li>CS</li>
+<li>SS</li>
+<li>DS</li>
+<li>ES</li>
+<li>FS</li>
+<li>GS</li>
+<li>LDTR</li>
+<li>TR</li>
+<li>GDTR</li>
+<li>SMBASE</li>
+</ul>
+<p>また、以下のMSRレジスタが保存の対象：</p>
+<ul>
+<li>IA32_DEBUGCTL</li>
+<li>IA32_SYSENTER_CS</li>
+<li>IA32_SYSENTER_ESP</li>
+<li>IA32_SYSENTER_EIP</li>
+<li>IA32_PERF_GLOBAL_CTRL</li>
+<li>IA32_PAT</li>
+<li>IA32_EFER</li>
+</ul>
+<p>さらに、レジスタ以外のステートとして、仮想CPU の状態・各セグメントの状態や属性・割り込みブロック状態の有無・VMX プリエンプションタイマのカウンタ・EPT のPTE アドレス等の情報も記録されている。</p>
+<p>ここで保存の対象になっていないレジスタについてはハイパーバイザが退避と復帰を行う必要がある</p>
+<h2 id="host-state-area" class="unnumbered">Host-state area</h2>
+<p>VMEntry 時にハイパーバイザのレジスタを退避し、VMExit 時に復帰するための領域。次のレジスタが 保存の対象になっている：</p>
+<ul>
+<li>CR0</li>
+<li>CR3</li>
+<li>CR4</li>
+<li>RSP</li>
+<li>RIP</li>
+<li>CS</li>
+<li>SS</li>
+<li>DS</li>
+<li>ES</li>
+<li>FS</li>
+<li>GS</li>
+<li>LDTR</li>
+<li>TR</li>
+<li>GDTR</li>
+</ul>
+<p>また、以下のMSRレジスタが保存の対象になっている：</p>
+<ul>
+<li>IA32_SYSENTER_CS</li>
+<li>IA32_SYSENTER_ESP</li>
+<li>IA32_SYSENTER_EIP</li>
+<li>IA32_PERF_GLOBAL_CTRL</li>
+<li>IA32_PAT</li>
+<li>IA32_EFER</li>
+</ul>
+<p>ここで保存の対象になっていないレジスタについては、ハイパーバイザが退避と復帰を行う必要がある</p>
+<h2 id="vm-execution-control-fields" class="unnumbered">VM-execution control fields</h2>
+<p>ゲストマシン実行時のCPU の挙動を設定するエリア。どのようなイベントでVMExit するかという情報はここに含まれている。各種のVMExit 要因のオン／オフフラグの他、EPT（メモリ仮想化支援）のオン／オフフラグ、EPT のアドレス、仮想Local APIC の設定、VPID のアドレスなどが含まれる</p>
+<h2 id="vm-exit-control-fields" class="unnumbered">VM-exit control fields</h2>
+<p>VMExit 時のCPU の挙動を設定するエリア。外部割り込み要因でVMExitしたときのCPUの挙動や、いくつかのMSR を退避・復帰機能のオン／オフフラグ、ハイパーバイザの64モードのオン／オフフラグなどが含まれる</p>
+<h2 id="vm-entry-control-fields" class="unnumbered">VM-entry control fields</h2>
+<p>VMEntry 時のCPU の挙動を設定する。ゲストマシンへの割り込み挿入のフィールドやいくつかのMSR の復帰機能のオン／オフフラグなど、ゲストの64bitモードのオン／オフフラグなどが含まれる</p>
+<h2 id="vm-exit-information-fields" class="unnumbered">VM-exit information fields</h2>
+<p>VMExit 時のexit 要因がここに書き込まれる</p>
+<h1 id="vmexit要因">VMExit要因</h1>
+<p>VT-xではリスト1のような要因によるVMExitを発生させることができます。これらの要因でVMExitを発生させるかどうかはVMCS上の「VM-execution control fields」で設定し、発生した場合VMCS上の「VM-exit information fields」に書き込まれます。</p>
+<h2 id="リストvmexit要因" class="unnumbered">リスト１　VMExit要因</h2>
+<ul>
+<li><p>例外かNMI割り込みの発生</p></li>
+<li><p>外部割り込みの発生</p></li>
+<li><p>トリプルフォールト</p></li>
+<li><p>INITシグナルの受信</p></li>
+<li><p>SIPIの受信</p></li>
+<li><p>SMIの受信</p></li>
+<li><p>内部割り込みの発生</p></li>
+<li><p>タスクスイッチ</p></li>
+<li><p>CPUID命令の実行</p></li>
+<li><p>Intel SMX 関連の命令の実行</p></li>
+<li><p>HLT命令の実行</p></li>
+<li><p>キャッシュ関連の命令の実行（INVD, WBINVD）</p></li>
+<li><p>TLB関連の命令の実行（HNVLPG, INVPCID）</p></li>
+<li><p>I/O関連の命令の実行（INB,OUTBなど）</p></li>
+<li><p>パフォーマンスモニタリングカウンタ関連の命令の実行（RDPMC）</p></li>
+<li><p>タイムスタンプカウンタ関連の命令の実行（RDTSC）</p></li>
+<li><p>SMM関連の命令の実行（RSM）</p></li>
+<li><p>VT-x拡張命令セットの実行</p></li>
+<li><p>コントロールレジスタへのアクセス</p></li>
+<li><p>拡張コントロールレジスタへのアクセス</p></li>
+<li><p>デバッグレジスタへのアクセス</p></li>
+<li><p>MSRへのアクセス</p></li>
+<li><p>MONITOR/MWAIT 命令の実行</p></li>
+<li><p>PAUSE 命令の実行</p></li>
+<li><p>APICレジスタへのアクセス</p></li>
+<li><p>GDTR、IDTR、LDTR、TRレジスタへのアクセス</p></li>
+<li><p>VMXプリエンプションタイマのエクスパイヤ</p></li>
+<li><p>RDRAND命令の実行</p></li>
+</ul>
+<h1 id="vt-x-拡張命令セット">VT-x 拡張命令セット</h1>
+<p>ハイパーバイザからVT-xの機能へアクセスするために、次のような命令が追加されています（ただし、VMCALLとVMFUNCについてはゲストマシンから呼ばれることが想定されています）。各命令のさらに詳しい説明については <span class="citation">(“Intel(R) 64 and IA-32 Architectures Software Developer Manuals”)</span> を参照してください。</p>
+<h2 id="vmcsメンテンナンス命令" class="unnumbered">VMCSメンテンナンス命令</h2>
+<p>VMCS内のデータは普通のメモリアクセス命令で読み書きするのではなく、VMREAD/VMWRITEを経由する必要があります。ゲストマシン起動時の手順は、VMPTRLDでVMCSのアドレスを設定、VMCLEARで初期化、VMWRITEでフィールドへ初期値を書き込んでからVMEntryとなります。</p>
+<h2 id="vt-x管理命令" class="unnumbered">VT-x管理命令</h2>
+<p>ハイパーバイザ上で一連のVT-x拡張命令セットを利用するには、まずVMXONを実行する必要があります。VMX non Root ModeへVMEntryするには、初めてVMEntryするときだけVMLAUNCH、以降VMExitから復帰するときはVMRESUMEとなります。</p>
+<h2 id="ハイパーコール命令" class="unnumbered">ハイパーコール命令</h2>
+<p>ゲストマシンからハイパーバイザを呼び出して何らかの処理を依頼するための命令です。準仮想化を実現するために使われることがあります。EPT操作命令メモリアクセスの仮想化支援（EPT）が有効なハイパーバイザで使われる命令です。EPTについては後述します。</p>
+<h2 id="ページングとメモリの仮想化" class="unnumbered">ページングとメモリの仮想化</h2>
+<p>マルチタスクをサポートする近代的なOSでは、プロセスごとに独立したメモリ空間を持ち、あるプロセスは別のプロセスのメモリ領域へアクセスできないようになっています。</p>
+<p>これを実現するために、CPUに「仮想メモリ」をサポートする機構（MMU）が搭載されています<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>。</p>
+<p>仮想メモリの実現方法として、現在では一般的に「ページング方式」がとられています。この方式では、プロセスごとの仮想メモリ空間を固定長（x86アーキテクチャでは一般的に4KB）に区切り、仮想ページと物理ページの割り当て情報を「ページテーブル」と呼ばれるメモリ上の表に記録します（図2）。</p>
+<div class="figure">
+<img src="figures/part2_fig2.png" alt="ページテーブル" /><p class="caption">ページテーブル</p>
+</div>
+<p>CPUからメモリへのアクセスがあった時、MMUはページテーブルを用いて仮想アドレスを物理アドレスへ変換し、適切な物理メモリアドレスへのアクセスを可能にします。</p>
+<p>ページテーブル上の各ページに対するエントリには対応する物理ページの情報以外にも、アクセス権（読み／書き／実行）のような属性情報が存在します。</p>
+<p>これによって特定のメモリ範囲に対してアクセス制御を行うようなことができます。</p>
+<p>また、アクセスの少ない物理ページをディスクへ書き出しページテーブル上の割り当て情報を解除（ページアウト）します。そして後にアクセスが起こったときにディスクから読み込んでページテーブル上の割り当て情報を再設定（ページイン）することで、物理メモリ容量よりも大きな仮想メモリを扱うことができるようになります。</p>
+<p>仮想化されたシステムにおいて、CPU上でそのままゲストOSを実行する時、このページング機構を仮想化する必要が生じます。これは、ゲストOS上のプロセスに割り当てられた仮想ページの参照先である物理ページのアドレスが指しているのはハイパーバイザがゲスト環境へ割り付けたメモリ領域内のアドレスであり、ハイパーバイザが管理する物理メモリ空間上のアドレスではないからです。</p>
+<p>たとえば、仮想マシンAへ1から4まで、仮想マシンBへ5から8までの物理ページを割り当てたとします。それぞれの仮想マシン上の物理ページ1へアクセスが行われる時、実際には仮想マシンAからであれば物理ページ1へ、仮想マシンBからであれば物理ページ5へアクセスが行われなければなりません（図3）。</p>
+<div class="figure">
+<img src="figures/part2_fig3.png" alt="メモリの仮想化による問題" /><p class="caption">メモリの仮想化による問題</p>
+</div>
+<p>この問題を解決するメモリ仮想化の手法として、ソフトウェアによる「シャドーページング」、ハードウェアによる「EPT」の2つを紹介します。</p>
+<h1 id="x86アーキテクチャにおけるページング機構">x86アーキテクチャにおけるページング機構</h1>
+<p>まず、x86アーキテクチャにおけるページング機構について、簡単におさらいしましょう。x86アーキテクチャでは1ページのサイズは4KBであるため、32bitモードでのページ総数は1,048,576ページとなります。このページテーブルを単純な2次元の表として表すと消費メモリ量が大きくなってしまいます。</p>
+<p>そこで、x86アーキテクチャではページディレクトリテーブルという概念を導入しました。これにより、少ないサイズでページテーブルを表現しています。1 つのページテーブルは1024エントリとし、1つのページテーブルに4MBの仮想メモリ空間の情報を持たせます。</p>
+<p>ページディレクトリテーブルは、このページテーブルのアドレス情報を格納します。ページディレクトリテーブルは1024 エントリあり、4GBの仮想メモリ空間全体を表現しています（図4）。</p>
+<div class="figure">
+<img src="figures/part2_fig4.png" alt="仮想メモリ空間のページング2段構成" /><p class="caption">仮想メモリ空間のページング2段構成</p>
+</div>
+<p>64bitモードの場合は8バイトのページテーブルエントリがテーブル当たり512エントリとなり、さらにページディレクトリポインタテーブルとページマップレベル4テーブルの2段が追加されて256TBの仮想メモリ空間をサポートしています<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>（図5）。</p>
+<div class="figure">
+<img src="figures/part2_fig5.png" alt="64bitモードの仮想メモリ空間" /><p class="caption">64bitモードの仮想メモリ空間</p>
+</div>
+<p>複数段にするだけではページテーブルの総エントリ数は変わりません。しかし、未使用の仮想メモリ空間も発生するため、必要な仮想メモリ空間に対してのみページテーブルを作成すれば、その分消費メモリを抑えることができます。</p>
+<p>ページディレクトリテーブルのアドレスをCPUにセットするためのレジスタとしてCR3レジスタが用意されています。MMUは仮想メモリ空間へのアクセスに対してCR3レジスタに書かれたページディレクトリテーブルのアドレスへアクセスして探索を行います。探索を行う時、仮想アドレスの先頭10ビットをページディレクトリテーブルへのオフセットとしてページテーブルを指すエントリを探索します。</p>
+<p>ページテーブルでは仮想アドレスの11～20ビットをオフセットとして物理ページを指すエントリを探索します。見つかった物理ページのアドレスに対して仮想アドレスの残り12ビットの値を足したアドレスが、CPUがアクセスしようとしている物理アドレスとなります。</p>
+<p>ページディレクトリテーブル／ページテーブルの各エントリにはページテーブル／物理ページのアドレスだけでなく、いくつかの属性情報が含まれます。</p>
+<p>次にその詳細を示します。</p>
+<ul>
+<li><p>プレゼントビット……1なら物理メモリ上に存在、0ならページフォルト例外</p></li>
+<li><p>リードライトビット……0の時に書き込みが実行されたらページフォルト例外</p></li>
+<li><p>ユーザスーパーバイザービット……0ならRing3からアクセス禁止</p></li>
+<li><p>ページライトスルービット……0ならライトスルー、1ならライトバック</p></li>
+<li><p>ページキャッシュディスエーブルビット……1ならキャッシュ禁止</p></li>
+<li><p>アクセスビット……ページにアクセスした時にCPUが1にする</p></li>
+<li><p>ダーティービット……ページに書き込んだ時にCPUが1にする</p></li>
+<li><p>PATビット……ページでPATを有効にする</p></li>
+<li><p>グローバルビット……1ならグローバルなページ、TLBの挙動に影響する</p></li>
+<li><p>ベースアドレス（20ビット）……ページディレクトリテーブルの場合はページテーブルのアドレス、ページテーブルの場合は物理ページのアドレス</p></li>
+</ul>
+<p>64bitモードの場合は、ベースアドレス長を拡張するためにページテーブルエントリが64bitへ拡張されます。たとえば、物理メモリの空き容量が低下した等の理由でページアウトを行う時は、物理ページをディスクへ書き出した後、プレゼントビットを0に設定します。ページアウトされた仮想ページへCPUがアクセスした場合、ページフォルト例外が発生します。ページフォルト例外のハンドラは、ディスクからページアウトされたページをメモリへロードし、ページテーブルのエントリへ新しい物理ページのベースアドレスを書き込み、プレゼントビットを有効にします。</p>
+<p>他には、カーネルモードとユーザモードでページテーブルを共有する場合、カーネルの領域をユーザスーパーバイザービット＝0にしておき、ユーザの領域をユーザスーパーバイザービット＝1にしておくという使い方をすることで、ユーザモードプログラムからカーネルのメモリ領域へアクセスされることを防ぎつつページテーブルの共有を可能にすることができます。ページングについてのより詳細な情報を得るには、 <span class="citation">(“Intel(R) 64 and IA-32 Architectures Software Developer Manuals”)</span> のChapter 4. Pagingを参照してください。</p>
+<h1 id="シャドーページング">シャドーページング</h1>
+<p>ゲストOSが各プロセスに対して作成したページテーブルとページディレクトリテーブルをそのまま実際のCPUのCR3レジスタに設定すると、現実の物理メモリ空間が参照されてしまいます。これではハイパーバイザが意図しないメモリ領域を参照することになってしまいます。これを防ぐため、ハイパーバイザはゲストのページディレクトリテーブルとページテーブルを複製し、ハイパーバイザがゲストマシンに割り当てたメモリ範囲を反映した物理ページ番号をページテーブルの各エントリに書き込み、CPUのCR3レジスタに複製したページディレクトリテーブルを書き込みます（図6）。</p>
+<div class="figure">
+<img src="figures/part2_fig6.png" alt="シャドーページング" /><p class="caption">シャドーページング</p>
+</div>
+<p>これにより、ゲストマシンの実行時に仮想ページへアクセスが生じた時、ゲストOSが設定したゲストマシン内の物理ページ番号ではなく、ハイパーバイザが設定した実際の物理ページ番号を参照するようになります。以上により適切なメモリ領域へ参照が行えるようになります。</p>
+<h1 id="ept">EPT</h1>
+<p>Nehalem以降のIntelのCPUでは、メモリ仮想化をCPUで支援する機能である「EPT」が追加されました。EPTをゲストマシンで有効にするには、64bitモードにおけるページングと同様に4段のページテーブルを作成し、ゲスト物理アドレスからホスト物理アドレスへのマッピング情報を書き込み、VMCSのVM Execution control fieldにあるExtended Page Table Pointer（EPTP）にページマップレベル4テーブルのアドレスをセットします。</p>
+<p>これにより、ゲストマシンから仮想メモリ空間への参照が行われた時に、CR3にセットされたページテーブルでゲスト物理アドレスへの変換が行われます。さらにEPTPにセットされたページテーブルでゲスト物理アドレスからホスト物理アドレスへの変換が行われます（図7）。</p>
+<div class="figure">
+<img src="figures/part2_fig7.png" alt="ゲスト物理アドレスからホスト物理アドレスへの変換" /><p class="caption">ゲスト物理アドレスからホスト物理アドレスへの変換</p>
+</div>
+<p>シャドーページングの場合は、CR3レジスタやページテーブルエントリへの読み書きのたびにシャドーページテーブルを構築していました。このときにVMExitが発生し、オーバヘッドとなっていましたが、EPTではこの処理が省かれることにより、パフォーマンスが向上します<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>。</p>
+<p>EPTのページテーブルエントリは、通常のページテーブルエントリとフィールドの割り当てが異なります。</p>
+<h1 id="vpid">VPID</h1>
+<p>直接EPTに関連する機能ではありませんが、メモリに関連するハードウェア仮想化支援機能でEPTとともにNehalem以降のIntelのCPUへ導入された「VPID（Virtual Processor Identifier）」を解説します。</p>
+<p>アドレス変換を高速化するため、CPUにはページテーブルエントリをキャッシュするTLBという機構が搭載されています。これは、仮想アドレスと物理アドレスのペアを記憶する連想メモリ（CAM）であり、少数の頻繁にアクセスされる領域をキャッシュします。</p>
+<p>また、ページテーブルエントリが書き換えられた時やページテーブルが切り替えられた時に「フラッシュ」操作を行い、エントリを削除してページテーブルとの整合性を保ちます。</p>
+<p>ゲストマシンをVMExitしてホストOSでプロセスを実行したり、別のゲストマシンを実行する時、TLBをフラッシュしないと仮想アドレスのアドレス解決が誤動作を起こします。このため、初期のVT-x対応CPUではVMEntry時／VMExit時にTLBをすべてフラッシュする必要がありました。</p>
+<p>Nehalem以降のIntelのCPUでは、これを防いでパフォーマンスを向上させる機能としてVPIDが導入されました。VPIDを有効にするには、VMCSのVM Execution control fieldにあるVPIDフィールドにそのゲストマシンのユニークなIDを設定します。</p>
+<p>VPID有効時には、VMEntry時／VMExit時にINVVPID命令により直前に実行していたゲストマシンのエントリのみTLBからフラッシュできるようになります。</p>
+<h1 id="まとめ">まとめ</h1>
+<p>いかがでしたでしょうか。今回は、前回の解説を補足するためにVMCSとVT-x命令セットの解説を行い、さらにメモリ仮想化について見てきました。</p>
+<p>次回は「I/Oの仮想化」について解説します。</p>
+<h1 id="謝辞" class="unnumbered">謝辞</h1>
+<p>校正に関して協力してくださった金子 直矢さん、水野 貴史さん、太居 司さん、忠鉢 洋輔さんありがとうございました。</p>
+<h1 id="ライセンス" class="unnumbered">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+<h1>参考文献</h1>
+<p>“Intel(R) 64 and IA-32 Architectures Software Developer Manuals.” <a href="http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html">http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html</a>.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>別の方式としてセグメント方式というものがあり、x86アーキテクチャはこの方式からページング方式へ移行してきたという歴史的事情があるため、今でもセグメント方式をサポートしています。<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>32bit PAEモードの場合も64bitモードのように段数が追加されて仮想メモリ空間が拡張されますが、ここでは解説を省略します。<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>ハイパーバイザの実装によっては30％ほど高速化すると言われています。<a href="#fnref3">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
