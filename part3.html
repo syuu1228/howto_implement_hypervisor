@@ -4,12 +4,12 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第３回 I/O 仮想化「デバイス I/O 編」</title>
+  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第３回 I/O仮想化「デバイスI/O編」</title>
   <style type="text/css">code{white-space: pre;}</style>
 </head>
 <body>
 <div id="header">
-<h1 class="title">ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第３回 I/O 仮想化「デバイス I/O 編」</h1>
+<h1 class="title"><p>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第３回 I/O仮想化「デバイスI/O編」</p></h1>
 </div>
 <h1 id="ハイパーバイザによるio-デバイスエミュレーション方法">ハイパーバイザによるI/O デバイスエミュレーション方法</h1>
 <p>OSの主要な機能の1つに、コンピュータ上の各種 デバイスに対するアクセス(デバイスへのI/O)の抽 象化が挙げられます。OS上で動作するアプリケー ションは、ファイルシステムやソケットインター フェースなどの形に抽象化されたものを用いて、デ バイスへアクセスを行います。今回は、仮想化環境 でゲストOSのデバイスアクセスをどのように仮想 化するか、これに焦点を当て解説します。</p>
