@@ -5,14 +5,16 @@
 
 ### タイトル
 
-先頭のタイトルは
-
-    第 3 回 I/O 仮想化「デバイス I/O 編」
-
-次のように変換します。
-
-    # 第 3 回 I/O 仮想化「デバイス I/O 編」
-
+先頭のタイトルはファイルの先頭で次のようにします。
+```
+---
+authors:
+- 'Takuya ASADA syuu@dokukino.com'
+title: |
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～
+    第１回 x86アーキテクチャにおける仮想化の歴史とIntel VT-x
+...
+```
 
 
 ### 章
@@ -23,7 +25,11 @@
 
 次のようになります。
 
-    ## ハイパーバイザによるI/O デバイスエミュレーション方法
+    ハイパーバイザによるI/O デバイスエミュレーション方法
+    ====================================================
+または
+
+    # ハイパーバイザによるI/O デバイスエミュレーション方法
 
 
 ### 節
@@ -32,18 +38,20 @@
 
 次のようになります。
 
-    ### シリアルポートの受信処理
+    シリアルポートの受信処理
+    ------------------------
+または
+
+    ## シリアルポートの受信処理
     
 ### 小節
 
 次のようになります。
 
-    #### I/O APIC を通して割り込む場合 
+    ### I/O APIC を通して割り込む場合 
 
 ### ソースコード
-
-
-例
+次のようになります。
 
     ```
     unsigned char read_com1(void) {
@@ -57,8 +65,6 @@
 このようになります。
 
     ![I/O-bitmap と I/O アドレス空間](figures/part3_fig1 "図1")
-
-
 
 ### 脚注
 
@@ -84,7 +90,27 @@ works/tablesに.xlsx形式で置いてあります。
 
 ### リンク
 
+    <http://example.com>
 
+### 参考文献
+参考文献はファイルの先頭のメタデータ部に以下のようなデータを足して、 @Popek や @SDM のように参照します。
+```
+references:
+- id: Popek
+  title: Formal Requirements for Virtualizable Third Generation Architectures
+  URL: 'http://www.dc.uba.ar/materias/so/2010/verano/descargas/articulos/VM-requirements.pdf'
+  issued:
+   year: 1974
+   month: 7
+- id: SDM
+  title: Intel(R) 64 and IA-32 Architectures Software Developer Manuals
+  URL: 'http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'
+```
+また、ファイルの終端に以下の章を追加して下さい。
+```
+参考文献
+========
+```
 
 ### ライセンス
 
