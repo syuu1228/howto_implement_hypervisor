@@ -1,12 +1,16 @@
-# 第7回 Intel VT-x を用いたハイパーバイザの実装その2「/usr/sbin/bhyveによる仮想CPUの実行処理」
+---
+authors:
+- 'Takuya ASADA syuu@dokukino.com'
+title: 第7回 Intel VT-x を用いたハイパーバイザの実装その2「/usr/sbin/bhyveによる仮想CPUの実行処理」
+...
 
-## はじめに
+# はじめに
 
 前回は、BHyVeの概要や使い方について紹介してきました。
 いよいよソースコードの解説に入っていきます。
 今回は、とくに/usr/sbin/bhyveの初期化とVMインスタンスの実行機能の実装について解説をしていきます。
 
-## 解説対象のバージョン
+# 解説対象のバージョン
 
 BHyVeは、現在開発の初期段階です。
 日々開発が進められており、さまざまな機能が追加されていますが、リリースバージョンが存在していません。
@@ -20,7 +24,7 @@ r245673のソースコードは次のコマンドで取得できます。
 
 svn co -r245673 svn://svn.freebsd.org/base/head src
 
-## /usr/sbin/bhyveと/usr/sbin/bhyveloadの役割分担
+# /usr/sbin/bhyveと/usr/sbin/bhyveloadの役割分担
 
 まずはじめに、前回簡単に紹介した/usr/sbin/bhyveと/usr/sbin/bhyveloadの役割分担について解説します。
 ゲストOSを起動するには、/usr/sbin/bhyveを実行する前に/usr/sbin/bhyveloadを実行してゲストカーネルのロードを行います。
@@ -46,7 +50,7 @@ VMX non root modeでハイパーバイザの介入が必要な何らかのイベ
 それでは、実際にBHyVeのソースコードを読んでいきましょう。
 リスト1とリスト2にソースコードを示します。
 
-### リスト1 usr.sbin/bhyve/bhyverun.c
+## リスト1 usr.sbin/bhyve/bhyverun.c
 ```
 static void *
 fbsdrun_start_thread(void *param)
@@ -217,49 +221,48 @@ main(int argc, char *argv[])
 	 * Add CPU 0
 	 */
 	fbsdrun_addcpu(ctx, BSP, rip);                                  (15)
-
-
-(1) getoptで処理されなかった一番端の引数がVM名となります。
+```
+ - (1) getoptで処理されなかった一番端の引数がVM名となります。
     libvmmapiを用いてVM名に対応するデバイスファイルをオープンします。
 
-(5) 4GB未満のゲストメモリ空間をlomem_addrへマッピングします。
+ - (5) 4GB未満のゲストメモリ空間をlomem_addrへマッピングします。
 
-(7) 4GB以上のゲストメモリ空間をhimem_addrへマッピングします。
+ - (7) 4GB以上のゲストメモリ空間をhimem_addrへマッピングします。
 
-(8) IOポートエミュレーションの初期化を行います。
+ - (8) IOポートエミュレーションの初期化を行います。
 
-(9) PCIデバイスエミュレーションの初期化を行います。
+ - (9) PCIデバイスエミュレーションの初期化を行います。
 
-(10)IO APICエミュレーションの初期化を行います。
+ - (10)IO APICエミュレーションの初期化を行います。
 
-(11)/usr/sbin/bhyveloadで設定されたRIPレジスタの値を取得します。
+ - (11)/usr/sbin/bhyveloadで設定されたRIPレジスタの値を取得します。
 
-(13)MPテーブルを生成します。2つ以上のCPU数で起動する時に必要です。
+ - (13)MPテーブルを生成します。2つ以上のCPU数で起動する時に必要です。
 
-(14)ACPIテーブルを生成します。無変更なFreeBSDカーネルを起動するのに必要です。
+ - (14)ACPIテーブルを生成します。無変更なFreeBSDカーネルを起動するのに必要です。
 
-(15)cpu0(BSP)のスレッドを起動します。実行開始アドレスとしてRIPを渡します。
+ - (15)cpu0(BSP)のスレッドを起動します。実行開始アドレスとしてRIPを渡します。
 
-(16)pthread_create(fbsdrun_start_thread)します。
+ - (16)pthread_create(fbsdrun_start_thread)します。
     ここまでがハイパーバイザの初期化の処理になります。
     ここからはゲストマシンの実行処理に移っていきます。
 
-(17)vm_loop()で仮想CPUを実行します。
+ - (17)vm_loop()で仮想CPUを実行します。
 
-(18)whileループの中でvm_run()を呼びます。
+ - (18)whileループの中でvm_run()を呼びます。
 
-(21)ioctlリターンの理由(vmexit.exitcode)に対応したイベントハンドラ(handler[])を呼び出します。
+ - (21)ioctlリターンの理由(vmexit.exitcode)に対応したイベントハンドラ(handler[])を呼び出します。
 
-(22)/usr/sbin/bhyveに定義されているhandler[]です。
+ - (22)/usr/sbin/bhyveに定義されているhandler[]です。
     IOポートへのアクセス、MSRレジスタの読み書き、メモリマップドIO、
     セカンダリCPUの起動シグナルなどがハンドラとして定義されています。
 
-(23)handler[]からの返り値により、CPUを現在のripから再開するか・次の命令から再開するか・
+ - (23)handler[]からの返り値により、CPUを現在のripから再開するか・次の命令から再開するか・
     ハイパーバイザの実行を中止するか、などの処理を行なっています。
     実行が再開される場合は、whileループにより再びvm_loop()の実行に戻ります。
-```
 
-### リスト 2 lib/libvmmapi/vmmapi.c
+
+## リスト 2 lib/libvmmapi/vmmapi.c
 
 ```
 ......(省略)......
@@ -339,31 +342,28 @@ vm_run(struct vmctx *ctx, int vcpu, uint64_t rip, struct vm_exit *vmexit)
 	bcopy(&vmrun.vm_exit, vmexit, sizeof(struct vm_exit));          (20)
 	return (error);
 }
+```
 
+ - (2) vm_open()はstruct vmctxをアロケートし、
 
+ - (3) vmctx->fdにファイルディスクリプタを保存します。
 
-(2) vm_open()はstruct vmctxをアロケートし、
+ - (4) vm_device_open()は/dev/vmm/${name}を読み書き用でオープンします。
 
-(3) vmctx->fdにファイルディスクリプタを保存します。
-
-(4) vm_device_open()は/dev/vmm/${name}を読み書き用でオープンします。
-
-(6) /dev/vmm/${name}をmmap()します。
+ - (6) /dev/vmm/${name}をmmap()します。
     vmm.koからゲストメモリ空間のアドレスが渡されます。
 
-(12)/dev/vmm/${name}へVM_GET_REGISTER ioctlを行います。
+ - (12)/dev/vmm/${name}へVM_GET_REGISTER ioctlを行います。
     vmm.koからレジスタの値が渡されます。
 
-(19)/dev/vmm/${name}へVM_RUN ioctlを行います。
+ - (19)/dev/vmm/${name}へVM_RUN ioctlを行います。
     vmm.koはこのスレッドが実行されているCPUをVT-x non root modeへ移行し、
     vmrun.ripで指定されたアドレスから実行を開始します。
 
-(20)VMX non root modeでハイパーバイザの介入が必要な何らかのイベントが発生すると
+ - (20)VMX non root modeでハイパーバイザの介入が必要な何らかのイベントが発生すると
     vmm.koの中でトラップされ、/usr/sbin/bhyveでイベントを処理する必要がある場合は
     ioctlがリターンされます。
     リターンされた理由をvmm.koからstruct vmexitで受け取ります。
-
-```
 
 
 ## まとめ
