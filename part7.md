@@ -34,7 +34,7 @@ svn co -r245673 svn://svn.freebsd.org/base/head src
 
 /usr/sbin/bhyveが起動されたら、まずはじめにゲストマシンが使用する各種デバイス(HDD/NIC/コンソール)のエミュレータを使用可能な状態に初期化する必要があります。
 
-初期化が終わると、 /usr/sbin/bhyveは仮想CPUの数だけスレッドを起動し、/dev/vmm/${name}に対してVM_RUN ioctlを発行します(図[fig1])。
+初期化が終わると、 /usr/sbin/bhyveは仮想CPUの数だけスレッドを起動し、/dev/vmm/${name}に対してVM_RUN ioctlを発行します(図1)。
 vmm.koはioctlを受けてCPUをVT-x non root modeへ切り替えゲストOSを実行します(VMEntry)。
 
 ![VM_RUN ioctl による仮想 CPU の実行イメージ](figures/part7_fig1 "図1")
@@ -46,8 +46,8 @@ VMX non root modeでハイパーバイザの介入が必要な何らかのイベ
 それでは、実際にBHyVeのソースコードを読んでいきましょう。
 リスト1とリスト2にソースコードを示します。
 
+### リスト1 usr.sbin/bhyve/bhyverun.c
 ```
-リスト 1 usr.sbin/bhyve/bhyverun.c
 static void *
 fbsdrun_start_thread(void *param)
 {
@@ -258,8 +258,10 @@ main(int argc, char *argv[])
     ハイパーバイザの実行を中止するか、などの処理を行なっています。
     実行が再開される場合は、whileループにより再びvm_loop()の実行に戻ります。
 ```
+
+### リスト 2 lib/libvmmapi/vmmapi.c
+
 ```
-リスト 2 lib/libvmmapi/vmmapi.c
 ......(省略)......
 static int
 vm_device_open(const char *name)
