@@ -14,7 +14,7 @@ PCIパススルーの解説を行う前に、まずは簡単にPCIについて�
 
 PCIデバイスはBus Number・Device Numberで一意に識別され、1つのデバイスが複数の機能を有する場合はFunction Numberで個々の機能が一意に識別されます。
 
-Linuxで"lspci -nn"を実行したときに出力の左端に表示される「aa:bb:c」のうち、aaがBus Number、bbがDevice Number、cがFunction Numberにあたります（図[fig1]）。
+Linuxで"lspci -nn"を実行したときに出力の左端に表示される「aa:bb:c」のうち、aaがBus Number、bbがDevice Number、cがFunction Numberにあたります（リスト1）。
 
 さらに、そのデバイスがどこのメーカーのどの機種であるかという情報はVendor ID・Device IDで表され、この情報によってOSはロードするドライバを選びます。
 Linuxでlspci -nnを実行したときに出力の右端に表示される「dddd:eeee」のうち、ddddがVendor ID、eeeeがDevice IDにあたります。
