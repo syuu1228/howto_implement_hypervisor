@@ -114,4 +114,4 @@ clean:
 	pandoc $< -s -o $@ --default-image-extension=.png --filter pandoc-citeproc
 
 %.mobi: %.epub
-	~/kindlegen/kindlegen $<
+	-~/kindlegen/kindlegen $<
