@@ -92,7 +92,7 @@ part19.epub: figures/part19_fig1.png figures/part19_fig2.png
 part20: part20.pdf part20.html part20.epub
 
 clean:
-	rm -fv *.tex *.aux *.dvi *.log *.pdf *.html *.epub *.out figures/*.png
+	rm -fv *.tex *.aux *.dvi *.log *.pdf *.html *.epub *.mobi *.out figures/*.png
 
 %.png: %.eps
 	convert $< $@
