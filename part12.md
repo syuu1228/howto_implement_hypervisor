@@ -1,4 +1,10 @@
-# 第12回 virtioによる準仮想化デバイスその2「Virtqueueとvirtio-netの実現」
+---
+authors:
+- 'Takuya ASADA syuu@dokukino.com'
+title: |
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第１２回 virtioによる準仮想化デバイス その１「Virtqueueとvirtio-netの実現」
+...
 
 ## はじめに
 

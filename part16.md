@@ -1,4 +1,10 @@
-# ハイパーバイザの作り方第16回PCIパススルーその2「VT-dの詳細」
+---
+authors:
+- 'Takuya ASADA syuu@dokukino.com'
+title: |
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第１６回 PCIパススルーその２「VT-dの詳細」
+...
 
 ## はじめに
 

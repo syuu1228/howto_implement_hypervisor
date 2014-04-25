@@ -2,8 +2,12 @@
 authors:
 - 'Takuya ASADA syuu@dokukino.com'
 title: |
-    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第２回 Intel
-    VT-xの概要とメモリ仮想化
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第２回 Intel VT-xの概要とメモリ仮想化
+references:
+- id: SDM
+  title: Intel(R) 64 and IA-32 Architectures Software Developer Manuals
+  URL: 'http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'
 ...
 
 VMCSの構造
@@ -364,15 +368,9 @@ Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
 
+参考文献
+========
+
 [^1]: 別の方式としてセグメント方式というものがあり、x86アーキテクチャはこの方式からページング方式へ移行してきたという歴史的事情があるため、今でもセグメント方式をサポートしています。
 [^2]: 32bit PAEモードの場合も64bitモードのように段数が追加されて仮想メモリ空間が拡張されますが、ここでは解説を省略します。
 [^3]: ハイパーバイザの実装によっては30％ほど高速化すると言われています。
-
-参考文献
-========
----
-references:
-- id: SDM
-  title: Intel(R) 64 and IA-32 Architectures Software Developer Manuals
-  URL: 'http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html'
-...

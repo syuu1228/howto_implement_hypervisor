@@ -2,8 +2,15 @@
 authors:
 - 'Takuya ASADA syuu@dokukino.com'
 title: |
-    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第 4 回 I/O
-    仮想化「割り込み編・その 1 」
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第４回 I/O仮想化「割り込み編・その１」
+references:
+- id: x2APIC
+  title: Intel64 Architecture x2APIC Specification
+  URL: 'http://www.intel.com/content/dam/doc/specification-update/64-architecture-x2apic-specification.pdf'
+- id: interrupt-routing
+  title: 最近のPCアーキテクチャにおける割り込みルーティングの仕組み
+  URL: 'http://syuu1228.github.io/howto_implement_hypervisor/part4_5.pdf'
 ...
 
 割り込みの種類
@@ -315,18 +322,9 @@ Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
 
+参考文献
+========
+
 [^1]: これは正確にはLogical Flat Modelというモードで、他にFlat Cluster Model、Hierarchical Cluster Modelなどがありますが、通常使われません。説明は割愛します。
 
 [^2]: WindowsではプロセスごとにTPRの値を制御し、プロセスの優先度に多じて割り込み量を変化させています。一方、LinuxではTPR の値は変えずにLowest Priorityを用い、複数のCPUへ割り込みを公平に分散させています。
-
-参考文献
-========
----
-references:
-- id: x2APIC
-  title: Intel64 Architecture x2APIC Specification
-  URL: 'http://www.intel.com/content/dam/doc/specification-update/64-architecture-x2apic-specification.pdf'
-- id: interrupt-routing
-  title: 最近のPCアーキテクチャにおける割り込みルーティングの仕組み
-  URL: 'http://syuu1228.github.io/howto_implement_hypervisor/part4_5.pdf'
-...

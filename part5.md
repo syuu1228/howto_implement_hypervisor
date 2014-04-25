@@ -1,7 +1,16 @@
 ---
 authors:
 - 'Takuya ASADA syuu@dokukino.com'
-title: '第 5 回 I/O 仮想化「割り込み編・その 2 」'
+title:  |
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第５回 I/O仮想化「割り込み編・その２」
+references:
+- id: interrupt-routing
+  title: 最近のPCアーキテクチャにおける割り込みルーティングの仕組み
+  URL: 'http://syuu1228.github.io/howto_implement_hypervisor/part4_5.pdf'
+- id: part3
+  title: 第３回 I/O 仮想化「デバイス I/O 編」
+  URL: 'http://syuu1228.github.io/howto_implement_hypervisor/part3.pdf'
 ...
 
 はじめに
@@ -288,6 +297,9 @@ Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
 
+参考文献
+========
+
 [^1]: VMCS の VM-Execution Control Fields の Exception Bitmap
     の各ビットが各例外のベクタ番号に対応していて、ここに1
     を設定するとその例外が発生した時に VMExit が発生するよう
@@ -309,15 +321,3 @@ Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
     が意図する割り込みハンドラと異なる割り込みハンド
     ラを設定できます。また、 IDTR へのアクセスをイベントとし
     て受け取り、デバッグ機能を実装することもできます。
-
-参考文献
-========
----
-references:
-- id: interrupt-routing
-  title: 最近のPCアーキテクチャにおける割り込みルーティングの仕組み
-  URL: 'http://syuu1228.github.io/howto_implement_hypervisor/part4_5.pdf'
-- id: part3
-  title: 第３回 I/O 仮想化「デバイス I/O 編」
-  URL: 'http://syuu1228.github.io/howto_implement_hypervisor/part3.pdf'
-...

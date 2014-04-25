@@ -2,8 +2,8 @@
 authors:
 - 'Takuya ASADA syuu@dokukino.com'
 title: |
-    第 6 回 Intel
-    VT-xを用いたハイパーバイザの実装「仮想CPUの実行処理・その1」
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第６回 Intel VT-xを用いたハイパーバイザの実装 その１「仮想CPUの実行処理」
 ...
 
 はじめに

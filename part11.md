@@ -1,4 +1,10 @@
-# 第11回 virtio による準仮想化デバイス その1「virtioの概要とVirtio PCI」
+---
+authors:
+- 'Takuya ASADA syuu@dokukino.com'
+title: |
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第１１回 virtioによる準仮想化デバイス その１「virtioの概要とVirtio PCI」
+...
 
 ## はじめに
 

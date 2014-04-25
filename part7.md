@@ -1,7 +1,9 @@
 ---
 authors:
 - 'Takuya ASADA syuu@dokukino.com'
-title: 第7回 Intel VT-x を用いたハイパーバイザの実装その2「/usr/sbin/bhyveによる仮想CPUの実行処理」
+title: |
+    ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
+    第７回 Intel VT-xを用いたハイパーバイザの実装その２「/usr/sbin/bhyveによる仮想CPUの実行処理」
 ...
 
 # はじめに
