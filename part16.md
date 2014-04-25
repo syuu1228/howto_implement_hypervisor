@@ -1,144 +1,122 @@
-# ハイパーバイザの作り方
-第１６回 PCIパススルー その2「VT-dの詳細」
-はじめに
+# ハイパーバイザの作り方第16回PCIパススルーその2「VT-dの詳細」
+
+## はじめに
+
 前回は、PCIパススルーとIOMMUの概要について解説しました。
 今回は、VT-dの詳細について解説していきます。
-前回のおさらい
-　PCIデバイスが持つメモリ空間をゲストマシンの
-メモリ空間にマップすることによりPCIデバイスを
-パススルー接続できますが、DMAを使用するときに 
-1つ困った問題が生じます。
-　PCIデバイスはDMA時のアドレス指定にホスト
-物理アドレスを使用します。ゲストOSは、ゲスト 
-OSは自分が持つゲスト物理ページとホスト物理
-ページの対応情報を持っていないので正しいページ
-番号をドライバに与えることができません。
-　そこで、物理メモリとPCIデバイスの間にMMU
-のような装置を置きアドレス変換を行う方法が考え
-出されました。このような装置をIOMMUと呼びま
-す。DMA転送時にアドレス変換を行うことで、パス
-スルーデバイスが正しいページへデータを書き込め
-るようになります（図[fig1]）。Intel VT-dは、このような
-機能を実現するためにチップセットへ搭載された 
-IOMMUです。
-図１，IOMMUを用いたDMA時のアドレス変換
-VT-dの提供する機能
+
+## 前回のおさらい
+
+PCIデバイスが持つメモリ空間をゲストマシンのメモリ空間にマップすることによりPCIデバイスをパススルー接続できますが、DMAを使用するときに1つ困った問題が生じます。
+
+PCIデバイスはDMA時のアドレス指定にホスト物理アドレスを使用します。ゲストOSは、ゲストOSは自分が持つゲスト物理ページとホスト物理ページの対応情報を持っていないので正しいページ番号をドライバに与えることができません。
+
+そこで、*物理メモリとPCIデバイスの間にMMUのような装置を置きアドレス変換を行う*方法が考え出されました。
+このような装置を*IOMMU*と呼びます。
+DMA転送時にアドレス変換を行うことで、パススルーデバイスが正しいページへデータを書き込めるようになります（図[fig1]）。
+Intel VT-dは、このような機能を実現するためにチップセットへ搭載されたIOMMUです。
+
+![図1, IOMMUを用いたDMA時のアドレス変換](figures/part16_fig1 "図1, IOMMUを用いたDMA時のアドレス変換")
+
+## VT-dの提供する機能
+
 VT-dが提供する機能には、次のようなものが挙げられます。
-・IO device assignment：特定のデバイスを特定のVMに割り当てるための機能
-・DMA remapping：仮想マシン上へDMAするためにアドレス変換を行う機能
-・Interrupt remapping：特定のデバイスから特定のVMへ届くように割り込みをルーティングする機能
-・Reliability: DMA・割り込みエラーをシステムソフトウェアに記録・レポートできる
-今回はVT-dによるアドレス変換の話を解説することを目的としているため、このうち”DMA remapping”機能に絞って解説を進めていきます(1)。
-なお、VT-dに関するより詳しい内容は”Intel Virtualization Technology for Directed I/O Architecture Specification”という資料にて解説されているので、こちらをご覧下さい(2)。
-より正確には、DMA remapping機能のうち”Requests-without-PASID”であるものについてのみ解説しています。
-http://www.intel.co.jp/content/www/jp/ja/intelligent-systems/intel-technology/vt-directed-io-spec.html
-アドレス変換テーブル
-　VT-dでは、アドレスリマップ対象のデバイスご
-とにCPUのMMUと同様の多段ページテーブルを持
-ちます。デバイスごとのページテーブルを管理する
-ため、PCIデバイスを一意に識別するBus Number・
-Device Number・Functionの識別子から対応するペー
-ジテーブルを探すための2段のテーブルを用います。
-　1段目はRoot Tableと呼ばれ、0から255までの
-Busナンバーに対応するエントリからなるテーブル
-です。このテーブルはアドレス変換時にVT-dから
-参照するため、Root Table Address Registerへセッ
-トされます。Root Tableエントリのフォーマットを
-表[tab1]に示します。
-表１，Root table entry format
-　Root tableエントリはcontext-table pointerフィー
-ルドで2段目のテーブルであるContext-tableのアド
-レスを指します。Context-tableはRoot tableエントリ
-で示されるBus上に存在するDevice 0-31・Function 
-0-7の各デバイスに対応するページテーブルを管理
-しています。Context-tableエントリのフォーマット
-を表[tab2]に示します。
-表２，Context-table entry format
-　Context-tableエントリはsecond level page translation 
-pointerでページテーブルのアドレスを指します。
-ページテーブルの段数はaddress widthフィールドで
-指定されます。図[fig2]に4段ページテーブル・4KBページ
-を使用する場合のアドレス変換テーブルの全体図を示
-します。ここで使用されるページテーブルエントリ
-のフォーマットは通常のページテーブルエントリと
-若干異なるのですが、ここでは解説は割愛します。
-図２，VT-dのアドレス変換テーブル全体図（例）
-フォールト
-　変換対象になるアドレスに対する有効なページ割り
-当てが存在しない場合、または対象ページへのアクセ
-ス権がない場合、 
-VT-dはフォールトを起こします。
-フォールトが発生した場合、メモリアクセスを行おう
-とした 
-PCIデバイスはアクセスエラーを受け取りま
-す。 
-OSへは、 
-MSI割り込みを使用して通知されます。 
-IOTLB
-　IOMMUのアドレス変換を高速に行うには、通常
-のMMUと同じようにアドレス変換結果のキャッ
-シュが必要です。通常の 
-MMUではこのような機構
-のことを 
-TLBを呼びますが、 
-IOMMUでは 
-IOTLBと
-呼びます。通常の 
-MMUのTLBでは、 
-TLBエントリ
-が古くなったときに 
-invalidateと呼ばれる操作によ
-りエントリを削除します。このときの 
-invalidateの
-粒度は、グローバルな 
-invalidate・プロセス単位の 
-invalidate([^3])・ページ単位の 
-invalidateなどが選べま
-す。 
-VT-dのIOTLBでは、グローバルな 
-invalidate・
-デバイス単位の 
-invalidate・VM単位（ドメインと呼ば
-れる）の 
-invalidate・ページ単位の 
-invalidateが行える
-ようになっています。 
-[^3]） Tagged TLBの場合。
-Context-cache
-　IOTLBに類似していますが、 
-VT-dでは 
-Context-
-table entryもキャッシュされています。これについ
-ても場合によって 
-invalidate操作が必要になります。
-DMARによるIOMMUの通知
-　DMAリマッピング機能がハードウェア上に存在
-することを 
-OSに伝えるため、 
-ACPIはDMARと呼ば
-れるテーブルを用意しています。 
-DMARでは、いく
-つかの異なる種類の情報が列挙されています。 
-IOMMUは 
-DMA Remapping Hardware Unit 
-Definition（DRHD）という名前の構造体で記述されて
-おり、他に 
-DMAに用いることのできない予約済み
-メモリ領域を示す 
-Reserved Memory Region Reporting（RMRR）などが存在します。 
-DRHDは 
-IOMMUのレジスタベースアドレスと、 
-IOMMUが 
-DMAリマッピング対象にしている 
-PCIデバイスの
-リストを持ちます。
-　VT-dの設定を 
-OS上から簡単に確認することは難
-しいですが、 
-ACPIテーブルは簡単に見ることができ
-るので、ここでその方法を説明します。例として 
-Ubuntu LinuxでDMARを表示するコマンドを画面1
-に示します。
+
+- IO device assignment：特定のデバイスを特定のVMに割り当てるための機能
+- DMA remapping：仮想マシン上へDMAするためにアドレス変換を行う機能
+- Interrupt remapping：特定のデバイスから特定のVMへ届くように割り込みをルーティングする機能
+- Reliability: DMA・割り込みエラーをシステムソフトウェアに記録・レポートできる
+
+今回はVT-dによるアドレス変換の話を解説することを目的としているため、このうち"DMA remapping"機能に絞って解説を進めていきます[^1]。
+
+なお、VT-dに関するより詳しい内容は"Intel Virtualization Technology for Directed I/O Architecture Specification"という資料にて解説されているので、こちらをご覧下さい[^2]。
+
+[^1]) より正確には、DMA remapping機能のうち"Requests-without-PASID"であるものについてのみ解説しています。
+[^2]) <http://www.intel.co.jp/content/www/jp/ja/intelligent-systems/intel-technology/vt-directed-io-spec.html>
+
+### アドレス変換テーブル
+
+VT-dでは、アドレスリマップ対象のデバイスごとにCPUのMMUと同様の多段ページテーブルを持ちます。
+デバイスごとのページテーブルを管理するため、PCIデバイスを一意に識別するBus Number・Device Number・Functionの識別子から対応するページテーブルを探すための2段のテーブルを用います。
+
+1段目はRoot Tableと呼ばれ、0から255までのBusナンバーに対応するエントリからなるテーブルです。
+このテーブルはアドレス変換時にVT-dから参照するため、Root Table Address Registerへセットされます。
+Root Tableエントリのフォーマットを表[tab1]に示します。
+
+Table: 表1, Root table entry format
+
+Root tableエントリはcontext-table pointerフィールドで2段目のテーブルであるContext-tableのアドレスを指します。
+Context-tableはRoot tableエントリで示されるBus上に存在するDevice 0-31・Function 0-7の各デバイスに対応するページテーブルを管理しています。
+Context-tableエントリのフォーマットを表[tab2]に示します。
+
+----------------------------------------------------------------------------------------------------------------
+bits    field                                   description
+------- --------------------------------------- ----------------------------------------------------------------
+127:88  reserved                                予約フィールド
+
+87:72   domain identifier                       ドメインID このエントリがどのVMに属するかを示す
+
+71      reserved                                予約フィールド
+
+70:67   ignored                                 無視されるフィールド
+
+66:64   address width                           ページテーブルの段数を示す
+                                                (0x0:2段、0x1:3段、0x2:4段、0x3:5段、0x4:6段)
+
+63:12   second level page translation pointer   アドレス変換に使用するページテーブルエントリのアドレスを指定する
+
+11:4    reserved                                予約フィールド
+
+3:2     translation type                        アドレス変換時の挙動を設定
+
+1       fault processing disable                0x0 :フォールトレコード・レポートを有効化
+                                                0x1 :フォールトレコード・レポートを無効化
+
+0       present                                 このエントリが有効化どうか
+----------------------------------------------------------------------------------------------------------------
+
+Table: 表2, Context-table entry format
+
+Context-tableエントリはsecond level page translation pointerでページテーブルのアドレスを指します。
+ページテーブルの段数はaddress widthフィールドで指定されます。
+図[fig2]に4段ページテーブル・4KBページを使用する場合のアドレス変換テーブルの全体図を示します。
+ここで使用されるページテーブルエントリのフォーマットは通常のページテーブルエントリと若干異なるのですが、ここでは解説は割愛します。
+
+![図2, VT-dのアドレス変換テーブル全体図(例)](figures/part16_fig2 "図2, VT-dのアドレス変換テーブル全体図(例)")
+
+### フォールト
+
+変換対象になるアドレスに対する有効なページ割り当てが存在しない場合、または対象ページへのアクセス権がない場合、VT-dはフォールトを起こします。
+フォールトが発生した場合、メモリアクセスを行おうとしたPCIデバイスはアクセスエラーを受け取ります。
+OSへは、MSI割り込みを使用して通知されます。
+
+### IOTLB
+
+IOMMUのアドレス変換を高速に行うには、通常のMMUと同じようにアドレス変換結果のキャッシュが必要です。
+通常のMMUではこのような機構のことをTLBを呼びますが、IOMMUではIOTLBと呼びます。
+通常のMMUのTLBでは、TLBエントリが古くなったときにinvalidateと呼ばれる操作によりエントリを削除します。
+このときのinvalidateの粒度は、グローバルなinvalidate・プロセス単位のinvalidate([^3])・ページ単位のinvalidateなどが選べます。
+VT-dのIOTLBでは、グローバルなinvalidate・デバイス単位のinvalidate・VM単位（ドメインと呼ばれる）のinvalidate・ページ単位のinvalidateが行えるようになっています。
+
+[^3]) Tagged TLBの場合。
+
+### Context-cache
+
+IOTLBに類似していますが、VT-dではContext-table entryもキャッシュされています。これについても場合によってinvalidate操作が必要になります。
+
+## DMARによるIOMMUの通知
+
+DMAリマッピング機能がハードウェア上に存在することをOSに伝えるため、ACPIはDMARと呼ばれるテーブルを用意しています。
+DMARでは、いくつかの異なる種類の情報が列挙されています。
+
+IOMMUはDMA Remapping Hardware Unit Definition(DRHD)という名前の構造体で記述されており、他にDMAに用いることのできない予約済みメモリ領域を示すReserved Memory Region Reporting(RMRR)などが存在します。
+DRHDはIOMMUのレジスタベースアドレスと、IOMMUがDMAリマッピング対象にしているPCIデバイスのリストを持ちます。
+
+VT-dの設定をOS上から簡単に確認することは難しいですが、ACPIテーブルは簡単に見ることができるので、ここでその方法を説明します。
+例としてUbuntu LinuxでDMARを表示するコマンドを画面1に示します。
+
+```
+画面1 DMAR表示コマンド(Ubuntu Linux)
 $ sudo apt-get install iasl
 $ sudo cp /sys/firmware/acpi/tables/DMAR .
 $ sudo iasl -d DMAR
@@ -195,38 +173,69 @@ syuu@hiratake:~$ cat DMAR.dsl
 [058h 0088  8]                 Base Address : 00000000000EC000
 [060h 0096  8]          End Address (limit) : 00000000000EFFFF
 〜　略　〜
-　Hardware Unit Definitionと表示されているのが 
-DRHDで、 
-Reserved Memory Regionと表示されてい
-るのが 
-RMRRです。
-　このテーブルの情報が誤っていると、 
-BIOSとカー
-ネルで 
-VT-dを有効にしても 
-Linuxカーネルがエ
-ラーを起こして 
-PCIパススルーが正常に動作しない
-場合があります[^4]。 
-[^4]） この場合、ユーザの設定ミスではなくBIOSのバグなので、対
-策としてはサーバベンダからBIOSアップデートを受け取る
-か、カーネル側でDMARを無視して強引に初期化するような
-方法しかありません。
-VT-dのレジスタ
-VT-dで使用される主なレジスタを表３に示します。
+```
+
+Hardware Unit Definitionと表示されているのがDRHDで、Reserved Memory Regionと表示されているのがRMRRです。
+
+このテーブルの情報が誤っていると、BIOSとカーネルでVT-dを有効にしてもLinuxカーネルがエラーを起こしてPCIパススルーが正常に動作しない場合があります[^4]。
+
+[^4]) この場合、ユーザの設定ミスではなくBIOSのバグなので、対策としてはサーバベンダからBIOSアップデートを受け取るか、カーネル側でDMARを無視して強引に初期化するような方法しかありません。
+
+### VT-dのレジスタ
+
+VT-dで使用される主なレジスタを表3に示します。
 VT-dのレジスタはメモリマップドでアクセスでき、ベースアドレスは前述のDMAR上のDRHDで通知されます。
-表３，VT-dの主なレジスタ
-VT-dの有効化
+
+表3, VT-dの主なレジスタ
+
+### VT-dの有効化
+
 VT-dを有効化し、DMAリマップを行うには以下のような手順で設定を行います。
-１，メモリ上にルートテーブル、コンテキストテーブルを作成
-２，root table address registerにroot tableのアドレスを設定し、global command registerにset root table pointerをセット（表４）してroot tableのアドレスを設定します 設定完了までウエイトするために、global status registerのroot table pointer statusにビットが立つまで（表５）ループします
-３，IOTLB、Context-cacheをinvalidateします（細かい手順は省略します）
-４，global command registerにtranslation enableをセットしてDMAリマッピングを有効化します 設定完了までウエイトするために、global status registerのtranslation enable statusにビットが立つまでループします
-表４，global command register
-表５，global status register
-まとめ
+
+xxxxx設定完了までウエイトするために、global status registerのtranslation enable statusにビットが立つまでループします。
+
+1. メモリ上にルートテーブル、コンテキストテーブルを作成
+2. root table address registerにroot tableのアドレスを設定し、global command registerにset root table pointerをセット（表４）してroot tableのアドレスを設定します。
+設定完了までウエイトするために、global status registerのroot table pointer statusにビットが立つまで（表５）ループします
+3. IOTLB、Context-cacheをinvalidateします（細かい手順は省略します）
+4. global command registerにtranslation enableをセットしてDMAリマッピングを有効化します xxxxx
+
+bits|field|description
+-|-|-
+31|translation enable|DMA remapping 有効・無効化
+30|set root table pointer|root table pointer のセット・アップデート
+29|set fault log|fault log pointer のセット・アップデート
+28|enable advanced fault logging|advanced fault logging 有効・無効化
+27|write buffer flush|write buffer を flush
+26|queued invalidation enable|queue invalidation 有効・無効化
+25|interrupt remapping enable|interrupt remaping 有効・無効化
+24|set interrupt remap table pointer|interrupt remap table pointer のセット・アップデート
+23|compatibility format interrupt|compatibility format interrupt 有効・無効化
+22:00|reserved|予約フィールド
+
+Table: 表4, global command register
+
+|bits|field|description|
+|-|-|-|
+|31|translation enable status|DMA remappingの状態|
+|30|root table pointer status|root table pointerの状態|
+|29|fault log status|fault log pointerの状態|
+|28|advanced fault logging status|advanced fault loggingの状態|
+|27|write buffer flush status|write buffer flushの状態|
+|26|queued invalidation enable status|queue invalidation enableの状態|
+|25|interrupt remapping enable status|interrupt remapingの状態|
+|24|interrupt remap table pointer status|interrupt remap table pointerの状態|
+|23|compatibility format interrupt status|compatibility format interruptの状態|
+|22:00|reserved|予約フィールド|
+
+Table: 表5, global status register
+
+## まとめ
+
 今回は、VT-dの詳細について解説しました。
-次回からは、よりソフトウェア寄りの視点から仮想化を解説していきたいと思います。ライセンス
+次回からは、よりソフトウェア寄りの視点から仮想化を解説していきたいと思います。
+
+ライセンス
 ==========
 
 Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
