@@ -6,11 +6,11 @@ title: |
     第１２回 virtioによる準仮想化デバイス その１「Virtqueueとvirtio-netの実現」
 ...
 
-## はじめに
+# はじめに
 
 前回は、ゲストOSのI/Oパフォーマンスを大きく改善する「virtio」準仮想化ドライバの概要と、virtioのコンポーネントの1つである「Virtio PCI」について解説しました。今回はVirtqueueとこれを用いたNIC(virtio-net)の実現方法について見ていきます。
 
-## virtioのおさらい
+# virtioのおさらい
 
 virtioは、大きく分けてVirtio PCIとVirtqueueの2つのコンポーネントからなります。Virtio PCIはゲストマシンに対してPCIデバイスとして振る舞い、次のような機能を提供します。
 -デバイス初期化時のホスト<->ゲスト間ネゴシエーションや設定情報通知に使うコンフィギュレーションレジスタ
