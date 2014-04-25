@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>第 6 回 Intel VT-xを用いたハイパーバイザの実装「仮想CPUの実行処理・その1」</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>第 6 回 Intel VT-xを用いたハイパーバイザの実装「仮想CPUの実行処理・その1」</p></h1>
+</div>
+<h1 id="はじめに">はじめに</h1>
+<p>前回までに、5回にわたりハードウェアが提供して いる仮想化支援機能を解説しました。</p>
+<p>今回からは、実際にどのようにして仮想化支援機 構を使い、ハイパーバイザを実装するのかを解説し ていきます。解説には、実装の具体例として現在 FreeBSDへの実装が進められているハイパーバイザ 「BHyVe (ビーハイブ)」を用います。</p>
+<h1 id="bhyveとは">BHyVeとは</h1>
+<p>BHyVeはNetAppにより開発された、FreeBSDで 動く新しいハイパーバイザです。 2011年に発表され、実装が進められています。現在、FreeBSD10の新機 能の1つとしてリリースすることを目指しています<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>。 設計はLinux KVMに似ており、FreeBSD版の KVMとも言えるでしょう。ただし、BHyVeは現在開 発の初期段階であるため、現在のKVMに比べ非常 に機能は限られています。現状、実用に用いるのは 難しい開発版の機能となります。しかし、ハイパー バイザの実装方法を学ぶための教材としては、以下の二点が優れています。</p>
+<p>1つは、最低限の機能のみ実装しているためKVM と比べるとコード量が非常にコンパクトであること です。もう1つは、デバイスエミュレーションなど を行うユーザランドプログラム(詳細は後述)がシン プルなものであることです。KVMではユーザランド プログラムに既存のエミュレータであるQEMUを流 用しており、これにより既存OSとの高い互換性が 得られていますがコードの見通しが悪くなっていま す。そこで、本連載ではKVMではなくBHyVeを用いて解説を行うことにします。</p>
+<h1 id="解説対象のバージョン">解説対象のバージョン</h1>
+<p>BHyVeは現在、リリース版が存在しません。ま た、開発の初期段階であるため、大きな変更が加え られることも予想されます。</p>
+<p>そこで、本連載では現時点でのFreeBSD-CURRENTでスナップショットが公開されている最 新リビジョンであるr245673を用いて解説を行います。 r245673のインストールディスクは、次のアドレスからダウンロードできます。</p>
+<p><a href="ftp://ftp.freebsd.org/pub/FreeBSD/snapshots/amd64/amd64/ISO-IMAGES/10.0/FreeBSD-10.0-CURRENT-amd64-20130119-r245673-release.iso">ftp://ftp.freebsd.org/pub/FreeBSD/snapshots/amd64/amd64/ISO-IMAGES/10.0/FreeBSD-10.0-CURRENT-amd64-20130119-r245673-release.iso</a></p>
+<p>r245673のソースコードは次のコマンドで取得できます。</p>
+<pre><code>svn co -r245673 svn://svn.freebsd.org/base/head src</code></pre>
+<p>また、BHyVe用にコンフィグレーションされたゲ ストマシンのディスクイメージが配布されており、 次のアドレスからダウンロードできます。</p>
+<p><a href="http://mirrors.nycbug.org/pub/BHyVe/r244024/diskdev.xz">http://mirrors.nycbug.org/pub/BHyVe/r244024/diskdev.xz</a></p>
+<h1 id="bhyveの動作環境">BHyVeの動作環境</h1>
+<p>BHyVeを試すには、Intel VT-xとEPT(Extended Page Tables)をサポートしたCPUが必要です。</p>
+<p>今のところAMDのCPUには対応していません。 どのモデルのCPUがEPTをサポートしているかは ark.intel.comで調べられます。簡単な目安としては、 Core i3, i5, i7ならばほぼすべてのCPUが対応して います。CeleronやPentiumなどの廉価版CPUでも EPT対応モデルが一部存在しています。実機にイン ストールするのが最も確実ですが、最近のVMware (VMware Player・VMware Workstation・VMware Fusion)ならばNested VM<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> に対応しているため仮想マシン上で試すこともできます。</p>
+<h1 id="bhyveが提供する機能">BHyVeが提供する機能</h1>
+<p>現状、BHyVeではゲストOSとしてFreeBSD/ amd64のみをサポートしています。</p>
+<p>ハードディスクコントローラとしては、標準的な IDEやAHCIコントローラのエミュレーションはサ ポートせず、準仮想化ドライバであるvirtio-blkをサ ポートしています。</p>
+<p>NICコントローラとしても同様に、標準的なIntel e1000などのデバイスのエミュレーションをサポー トせず、準仮想化ドライバであるvirtio-netをサポー トしています。virtioは多くの場合、標準的なデバイ スのエミュレーションと比較して高い性能が得られ ますが、ゲストOSにvirtioドライバをインストール し、/boot/loader.confの設定を行う必要があります。</p>
+<p>システムコンソールとしては、標準的なビデオデバ イスをサポートはサポートされず、PCI接続の16550 互換シリアルポートのみをサポートしています。 PCI接続のシリアルポートをシステムコンソールと して使うのは非標準的なハードウェア構成であるた め、これについても/boot/loader.confの設定を行う 必要があります。また、ビデオデバイスをサポート しないため、X11を起動してGUI環境を表示することはできません。</p>
+<p>BHyVeがエミュレート可能なデバイスは上述の3 種類だけですが、Intel VT-dを用いて実機上のPCI・ PCI Expressデバイスをゲストマシンへパススルー 接続できます。この他、割り込みコントローラのエ ミュレーション(Local APIC、IO-APIC)や、タイマ デバイスのエミュレーション、ハードウェア構成を ゲストOSへ伝えるのに必要なAPICなどをサポー トしています。また、BIOSやUEFIなどのファーム ウェアをサポートしていないため、ディスクイメー ジからブートローダをロードしてゲストOSを起動 することができません。このためにハイパーバイザ の機能としてFreeBSDカーネルをロードしゲストマ シンを初期化するOSローダが実装されています。</p>
+<h1 id="bhyveの構成">BHyVeの構成</h1>
+<p>BHyVeは、カーネルモジュールとユーザランドプ ラグラムの2つから構成されます。</p>
+<p>カーネルモジュールvmm.koは、CPUに対して VT-x命令を発効するなど、ハードウェアに近い処理を行います。</p>
+<p>ユーザランドプログラム/usr/sbin/bhyveは、ユー ザインタフェースを提供し、ハードウェアエミュレーションを行います。</p>
+<p>また、BHyVeには/usr/sbin/bhyveloadというツー ルがあります。前章で述べた通り、BHyVeではディ スクイメージ上のブートローダを実行できません。 このため、ゲストカーネルをロードして起動可能な 状態に初期化するゲストOSローダ(/usr/sbin/bhyveload) が付属します。</p>
+<p>/usr/sbin/bhyveloadはFreeBSDブートローダを FreeBSD上で実行可能なプログラムに改変し、ゲ ストマシンのディスクイメージからカーネルを読み 込んでゲストメモリ空間へ展開するようにしたもの です。/usr/sbin/bhyveloadを実行すると、FreeBSD のブート時に表示されるのと同じメニューが表示さ れます。このため、一見するとゲストマシンの実行 が開始されたように見えます。しかし、これはホス トOSで/usr/sbin/bhyveloadが出力している画面で、 ゲストマシンの起動は開始されていません。</p>
+<p>このほか、ゲストマシンの実行とは直接関係しま せんが、VMインスタンスの削除などを行うための VMインスタンス管理ツールとして/usr/sbin/bhyvectlが提供されています。</p>
+<p>これらのユーザランドのプログラム群は、VM管理 用のライブラリ(libvmmapi)を通してゲストマシンの 初期化や実行をします。libvmmapiはmmapやioctlを 発行し、vmm.koが提供するデバイスを操作します。</p>
+<p>全体図を図1に示します。</p>
+<div class="figure">
+<img src="figures/part6_fig1.png" alt="BHyVeの構成" /><p class="caption">BHyVeの構成</p>
+</div>
+<h1 id="bhyveの使い方">BHyVeの使い方</h1>
+<p>BHyVeを試すには、ホストマシンのセットアップ とゲストマシンのディスクイメージの準備が必要で す。前述のアドレスを参照してください。 リスト１にシェルからBHyVeを用いてゲストマシンを実行する方法を示します。</p>
+<h3 id="リスト">リスト１</h3>
+<pre><code># kldload vmm.ko                                    (1)
+# ls /dev/vmm                                       (2)
+# /usr/sbin/bhyveload -d diskdev -m 1024 guest0     (3)
+
+Consoles: userboot
+
+FreeBSD/amd64 User boot, Revision 1.1
+(root@bhyve, Sat Dec  8 17:35:59 PST 2012)
+Loading /boot/defaults/loader.conf
+/boot/kernel/kernel text=0xd01c58 data=0x15e9a0+0x2bb490 syms=[0x8+0x14bbd8+0x8+0x1a7a89]
+/boot/kernel/virtio.ko size 0x5a90 at 0x1810000
+/boot/kernel/if_vtnet.ko size 0xd910 at 0x1816000
+/boot/kernel/virtio_pci.ko size 0x6cc0 at 0x1824000
+/boot/kernel/virtio_blk.ko size 0x6b08 at 0x182b000
+|
+
+  ______               ____   _____ _____
+ |  ____|             |  _ \ / ____|  __ \
+ | |___ _ __ ___  ___ | |_) | (___ | |  | |
+ |  ___| &#39;__/ _ \/ _ \|  _ &lt; \___ \| |  | |
+ | |   | | |  __/  __/| |_) |____) | |__| |
+ | |   | | |    |    ||     |      |      |
+ |_|   |_|  \___|\___||____/|_____/|_____/    ```                       `
+                                             s` `.....---.......--```   -/
+ ?????????????Welcome to FreeBSD???????????? +o   .--`         /y:`     +.
+ ?                                         ?  yo`:.            :o     `+-
+ ?  1. Boot Multi User [Enter]             ?   y/               -/`  -o/
+ ?  2. Boot [S]ingle User                  ?  .-                  ::/sy+:.
+ ?  3. [Esc]ape to loader prompt           ?  /                     `--  /
+ ?  4. Reboot                              ? `:                          :`
+ ?                                         ? `:                          :`
+ ?  Options:                               ?  /                          /
+ ?  5. Configure Boot [O]ptions...         ?  .-                        -.
+ ?                                         ?   --                      -.
+ ?                                         ?    `:`                  `:`
+ ?                                         ?      .--             `--.
+ ?                                         ?         .---.....----.
+ ???????????????????????????????????????????
+
+Booting...
+# ls /dev/vmm                                       (4)
+
+guest0
+# /usr/sbin/bhyve -A -I -m 1024 -s 0:0,virtio-blk,diskdev10 \
+-S 31,uart,stdio guest0                             (5)
+
+GDB: no debug ports present
+KDB: debugger backends: ddb
+KDB: current backend: ddb
+Copyright (c) 1992-2012 The FreeBSD Project.
+Copyright (c) 1979, 1980, 1983, 1986, 1988, 1991, 1992, 1993, 1994
+  The Regents of the University of California. All rights reserved.
+FreeBSD is a registerd trademark of The FreeBSD Foundation.
+FreeBSD 10.0-CURRENT #0 r243948: Thu Dec  6 14:03:56 UTC 2012
+    root@kaos.glenbarber.us:/usr/obj/usr/src/sys/GENERIC amd64
+......(省略)......
+# ls /dev/vmm                                       (6)
+guest0
+# /usr/sbin/bhyvectl --vm=guest0 --destroy          (7)
+# ls /dev/vmm                                       (8)</code></pre>
+<ol style="list-style-type: decimal">
+<li>カーネルモジュールをロードし、BHyVeを使用可能にする</li>
+<li>vmm.koがロードされると/dev/vmmディレクトリが作成される。 この状態ではVMインスタンスが存在しないので、ディレクトリは空</li>
+<li>/usr/sbin/bhyveloadはVMインスタンスを作成し、 BSDカーネルをディスクイメージから読み込みます。 そしてVMインスタンスのメモリ領域へロードして起動可能な状態を作る。 カーネルをロードするプログラムはFreeBSDのブートローダのコードをそのまま使っているため、 ブート時に表示されるのと同じメニューが表示される。 しかし、これはホスト側で実行されているプログラムでゲストマシンの起動は始まってない。 引数-dはディスクイメージ、-mはメモリサイズ、最後の引数はVM名を指定している</li>
+<li>/usr/sbin/bhyveloadが作成したVMインスタンスは、/dev/vmm以下にデバイスファイルとして表示される</li>
+<li>/usr/sbin/bhyveは/usr/sbin/bhyveloadが初期化したVMインスタンスを実行する。 引数-mはメモリサイズ、-sと-SはゲストマシンのPCI上に接続される仮想デバイス、最後の引数はVM名を指定している</li>
+<li>shutdownを行なってbhyveプロセスを終了した後も、カーネル側にVMインスタンスの状態が残る</li>
+<li>VMインスタンスを削除しゲストメモリを開放するには、これを削除する必要がある。 /usr/sbin/bhyvectlの--destroyオプションを使い、VMインスタンスを削除する</li>
+<li>VMインスタンスを削除するとデバイスファイルも消去される</li>
+</ol>
+<p>使い方はKVMに似ていますが、VMインスタン スの状態がVM実行プログラムと分離されてお り、/dev/vmm/VM名に保持される点がKVMと異 なっています。このため、OSローダがVM実行プ ログラムと別プログラムになっていたり、VM実 行プログラムを終了とは別にVMインスタンス の削除コマンドを実行する必要が出てきます。</p>
+<h1 id="まとめ">まとめ</h1>
+<p>今回は、BHyVeの概要と使い方について説明しま した。次回からいよいよソースコードの解説に移りたいと思います。</p>
+<h1 id="ライセンス">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>2013年1月にFreeBSD-CURRENTの開発ツリーにマージされました。<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>ハイパーバイザ上でハイパーバイザを実行可能にする機能。<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
