@@ -1,0 +1,365 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１１回 virtioによる準仮想化デバイス その１「virtioの概要とVirtio PCI」</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１１回 virtioによる準仮想化デバイス その１「virtioの概要とVirtio PCI」</p></h1>
+</div>
+<h1 id="はじめに">はじめに</h1>
+<p>前回までに、ハイパーバイザでのI/O仮想化の実装を、BHyVeのソースコードを例に挙げ解説してきました。今回は、ゲストOSのI/Oパフォーマンスを大きく改善する「virtio」準仮想化ドライバの概要と、virtioのコンポーネントの1つである「Virtio PCI」について解説します。</p>
+<h1 id="完全仮想化デバイスと準仮想化デバイス">完全仮想化デバイスと準仮想化デバイス</h1>
+<p>x86アーキテクチャを仮想化する手法として、「準仮想化」と呼ばれる方式があります。これは、Xenによって実装された方式です <span class="citation">(“第１回 X86アーキテクチャにおける仮想化の歴史とIntel VT-X”)</span>。</p>
+<p>準仮想化では、仮想化に適した改変をゲストOSに加えます。これにより、改変を加えずゲストOSを仮想化する完全仮想化と比較し、高いパフォーマンスが得られるようになります。この準仮想化では、ハードウェア仮想化支援も必要としていませんでした。</p>
+<p>現在では、先に説明した準仮想化よりも完全仮想化が広く使われるようになっています。これは、ハードウェア仮想化支援機能を持つ CPUが普及し、多くの環境で高速なハードウェア支援機能が利用できるようになったためです。</p>
+<p>しかし、完全仮想化を採用したハイパーバイザにおいても、部分的に準仮想化の概念を取り入れています。その部分としては、システム全体のパフォーマンスに大きく影響を及ぼす仮想デバイスが挙げられます。</p>
+<p>このような仮想デバイスのことを「準仮想化デバイス」と呼びます。これに対して、実ハードウェアと同じデバイスをエミュレーションしている仮想デバイスのことを「完全仮想化デバイス」と呼びます。</p>
+<p>完全仮想化デバイスでは、実ハードウェア向けのOSに付属しているデバイスドライバをそのまま使用できま。しかし、準仮想化デバイスではゲスト環境向けに、準仮想化デバイス用のデバイスドライバをインストールする必要があります。</p>
+<p>準仮想化デバイスのフレームワークとして「virtio」があります。これは、特定のハイパーバイザやゲストOSに依存しないフレームワークです。その仕様やソースコードは公開されているため、ハイパーバイザ側ではKVM・VirtualBox・lguest・BHyVeなど、ゲストOS側で はLinux・FreeBSD・NetBSD・OpenBSD・Windows・MonaOSなど多くの実装が存在しています。</p>
+<p>また、XenやVMware、Hyper-Vなどのハイパーバイザでも、同様の考え方を採用した準仮想化ドライバが採用されています<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>。</p>
+<h1 id="完全仮想化デバイスが遅い理由">完全仮想化デバイスが遅い理由</h1>
+<p>実機上でネットワークインターフェースやブロックデバイスなどに対してI/Oを行う場合、OSはデバイスドライバを介して各デバイスのハードウェアレジスタに対して読み書きを行います。</p>
+<p>前回までの記事で解説したとおり、Intel VT-xではこのハードウェアレジスタに対するアクセスを検知するたびにVMExitを行います。ハイパーバイザはVMExitを受けてデバイスエミュレーション処理を行います。</p>
+<p>この一連の処理は仮想化を行うときだけに発生するオーバーヘッドであり、この部分の処理の重さが実機と比較した時のI/O性能の差に現れてきます。</p>
+<p>より詳細には次のようなコストが発生し、実機上のI/Oと比較してレイテンシが大きくなる可能性があります。</p>
+<h2 id="vmx-non-root-modevmx-root-mode間のモード遷移にかかるコスト">VMX non-root mode・VMX root mode間のモード遷移にかかるコスト</h2>
+<p>ハードウェアレジスタアクセス時のVMExitとゲスト再開時のVMEntryでは、それぞれVMX non-root modeとVMX root modeの間でモード遷移が発生します。この遷移のコストはCPUの進化に伴い小さくなってきているものの、VMExit・VMEntryにそれぞれ1000サイクルほど消費します。</p>
+<h2 id="デバイスエミュレータの呼び出しにかかるコスト">デバイスエミュレータの呼び出しにかかるコスト</h2>
+<p>多くの場合、ハイパーバイザのデバイスエミュレータはユーザプロセス上で動作しています。このため、ハードウェアレジスタアクセスをエミュレートするにはカーネルモードからユーザモードへ遷移し、エミュレーションを行ってからカーネルモード へ戻ってくる必要があります。</p>
+<p>また、ユーザプロセスはプロセススケジューラが適切と判断したタイミングで実行されるため、VMExit直後にデバイスエミュレータのプロセスが実行される保証はありません。</p>
+<p>同様に、ゲスト再開のVMEntryについてもデバイスエミュレーション終了直後に行われる保証はなく、スケジューリング待ちになる可能性もあります。</p>
+<p>また、たいていの完全仮想化デバイスでは一度のI/Oに複数回レジスタアクセスを行う必要があります(たとえば、あるNICの受信処理では5〜6回のレジスタアクセスが必要になります)。レジスタアクセスを行うたびに、上述の処理が発生し、大きなコストがかかります。高速なI/Oが求められるデバイスの場合には、ここが性能上のボトルネックになります。</p>
+<h1 id="virtioの概要">virtioの概要</h1>
+<p>virtioは前述のようなデバイスの完全仮想化にかかるコストを減らすため、ホスト・ゲスト間で共有されたメモリ領域上に置いたキューを通じてデータの入出力を行います。</p>
+<p>VMExitはキューへデータを送り出したときに、ハイパーバイザへ通知を行う目的でのみ行われ、なおかつハイパーバイザ側がキュー上のデータを処理中であれば通知を抑制することも可能す。このため、完全仮想化デバイスと比較して大幅にモード遷移回数が削減されています。</p>
+<p>virtioは、大きく分けてVirtio PCIとVirtqueueの2つのコンポーネントからなります。</p>
+<p>Virtio PCIはゲストマシンに対してPCIデバイスとして振る舞い、以下のような機能を提供します。</p>
+<ul>
+<li>デバイス初期化時のホスト&lt;-&gt;ゲスト間ネゴシエーションや設定情報通知に使うコンフィギュレーションレジスタ</li>
+<li>割り込み(ホスト-&gt;ゲスト)、I/Oポートアクセス(ゲスト-&gt;ホスト)によるホスト&lt;-&gt;ゲスト間イベント通知機構</li>
+<li>標準的なPCIデバイスのDMA機構を用いたデータ転送機能</li>
+</ul>
+<p>Virtqueueはデータ転送に使われるゲストメモリ空間上のキュー構造です。デバイスごとに1つまたは複数のキューを持つことができます。たとえば、virtio-netは送信用キュー・受信用キュー・コントロール用キューの3つを必要とします。</p>
+<p>ゲストOSは、PCIデバイスとしてvirtioデバイスを検出して初期化し、Virtqueueをデータの入出力に、割り込みとI/Oポートアクセスをイベント通知に用いてホストに対してI/Oを依頼します。</p>
+<p>今回の記事では、このうちVirtio PCIについてより詳しく見ていきましょう。</p>
+<h1 id="pciのおさらい">PCIのおさらい</h1>
+<p>Virtio PCIの解説を行う前に、まずは簡単にPCIについておさらいしましょう。</p>
+<p>PCIデバイスはBus Number・Device Numberで一意に識別され、1つのデバイスが複数の機能を有する場合はFunction Numberで個々の機能が一意に識別されます。</p>
+<p>これらのデバイスはPCI Configuration Space、PCI I/O Space、PCI Memory Spaceの3つのメモリ空間を持ちます。</p>
+<p>PCI Configuration Spaceはデバイスがどこのメーカーのどの機種であるかを示すVendor ID・Device IDや、PCI I/O Space・PCI Memory Spaceのマップ先アドレスを示すBase Address Register、MSI割り込みの設定情報など、デバイスの初期化とドライバのロードに必要な情報を多数含んでいます。</p>
+<p>PCI Configuration Spaceにアクセスするには、次のような手順を実施する必要があります。 1. デバイスのBus Number・Device Number・Function Numberとアクセスしたい領域のオフセット値をEnable BitとともにCONFIG_ADDRESSレジスタ<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>にセットする。CONFIG_ADDRESSレジスタのビット配置は表1のとおり 2. CONFIG_DATAレジスタ<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>に対して読み込みまたは書き込みを行う</p>
+<p>OSはPCIデバイス初期化時に、Bus Number・Device Numberをイテレートして順にPCI Configuration Spaceを参照することで、コンピュータに接続されているPCIデバイスを検出できます。</p>
+<p>PCI I/O SpaceはI/O空間にマップされており、おもにデバイスのハードウェアレジスタをマップするなどの用途に使われているようです<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>。</p>
+<p>図1のようにPCI Memory Spaceは物理アドレス空間にマップされており、ビデオメモリなど大きなメモリ領域を必要とする用途に使われているようです。どちらの領域もマップ先はPCI Configuration SpaceのBase Address Registerを参照して取得する必要があります。</p>
+<table>
+<caption>CONFIG_ADDRESS register</caption>
+<thead>
+<tr class="header">
+<th align="left">ビットポジション</th>
+<th align="left">内容</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">31</td>
+<td align="left">Enable Bit</td>
+</tr>
+<tr class="even">
+<td align="left">30-24</td>
+<td align="left">Reserved</td>
+</tr>
+<tr class="odd">
+<td align="left">23-18</td>
+<td align="left">Bus Number</td>
+</tr>
+<tr class="even">
+<td align="left">15-11</td>
+<td align="left">Device Number</td>
+</tr>
+<tr class="odd">
+<td align="left">10-8</td>
+<td align="left">Function Number</td>
+</tr>
+<tr class="even">
+<td align="left">7-2</td>
+<td align="left">Register offset</td>
+</tr>
+<tr class="odd">
+<td align="left">1-0</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
+<div class="figure">
+<img src="figures/part11_fig1.png" alt="PCI Configuration Space" /><p class="caption">PCI Configuration Space</p>
+</div>
+<h1 id="virtio-pci-デバイスの検出方法">Virtio PCI デバイスの検出方法</h1>
+<p>virtioデバイスはゲストマシンに接続されているPCIデバイスとしてゲストOSから認識されます。</p>
+<p>この際、PCI Configuration SpaceのVendor IDは0x1AF4、Device IDは0x1000 - 0x1040の値が渡されます。さらに、virtioデバイスの種類を判別するための追加情報として、表2のようなSubsystem Device IDが渡されます。</p>
+<p>ゲストOSはこれらのIDを見て適切なvirtio用ドライバをロードします。</p>
+<table>
+<caption>Subsystem Device ID</caption>
+<thead>
+<tr class="header">
+<th align="left">Subsystem Device ID</th>
+<th align="left">device type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">network card</td>
+</tr>
+<tr class="even">
+<td align="left">2</td>
+<td align="left">block device</td>
+</tr>
+<tr class="odd">
+<td align="left">3</td>
+<td align="left">console</td>
+</tr>
+<tr class="even">
+<td align="left">4</td>
+<td align="left">entropy source</td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="left">memory balooning</td>
+</tr>
+<tr class="even">
+<td align="left">8</td>
+<td align="left">SCSI host</td>
+</tr>
+<tr class="odd">
+<td align="left">9</td>
+<td align="left">9P transport</td>
+</tr>
+</tbody>
+</table>
+<h1 id="virtio-header">Virtio Header</h1>
+<p>Virtio HeaderはPCI I/O Spaceの先頭に置かれたvirtioデバイスの設定用のフィールドで、ゲストOSがvirtioデバイスドライバを初期化するときに利用されます(表3)。 Virtio Headerの終端部分(MSIが無効の場合は20byte、有効の場合は24byte)からはdevice specific headerが続きます。</p>
+<p>表4にvirtio-netのdevice specific headerを示します。</p>
+<table>
+<caption>Virtio header</caption>
+<thead>
+<tr class="header">
+<th align="left">offset</th>
+<th align="left">field name</th>
+<th align="left">bytes</th>
+<th align="left">direction</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">HOST_FEATURES</td>
+<td align="left">4</td>
+<td align="left">RO</td>
+<td align="left">ホストが対応する機能のビットフィールド</td>
+</tr>
+<tr class="even">
+<td align="left">4</td>
+<td align="left">GUEST_FEATURES</td>
+<td align="left">4</td>
+<td align="left">RW</td>
+<td align="left">ゲストが有効にしたい機能のビットフィールド</td>
+</tr>
+<tr class="odd">
+<td align="left">8</td>
+<td align="left">QUEUE_PFN</td>
+<td align="left">4</td>
+<td align="left">RW</td>
+<td align="left">QUEUE_SELで指定されたキューに割り当てる</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">メモリ領域の物理ページ番号（PFN）</td>
+</tr>
+<tr class="odd">
+<td align="left">12</td>
+<td align="left">QUEUE_NUM</td>
+<td align="left">2</td>
+<td align="left">RO</td>
+<td align="left">QUEUE_SELで指定されたキューのサイズ</td>
+</tr>
+<tr class="even">
+<td align="left">14</td>
+<td align="left">QUEUE_SEL</td>
+<td align="left">2</td>
+<td align="left">RW</td>
+<td align="left">キュー番号</td>
+</tr>
+<tr class="odd">
+<td align="left">16</td>
+<td align="left">QUEUE_NOTIFY</td>
+<td align="left">2</td>
+<td align="left">RW</td>
+<td align="left">QUEUE_SELで指定されたキューにデータがある事を通知</td>
+</tr>
+<tr class="even">
+<td align="left">18</td>
+<td align="left">STATUS</td>
+<td align="left">1</td>
+<td align="left">RW</td>
+<td align="left">デバイスのステータス</td>
+</tr>
+<tr class="odd">
+<td align="left">19</td>
+<td align="left">ISR</td>
+<td align="left">1</td>
+<td align="left">RO</td>
+<td align="left">割り込みステータス</td>
+</tr>
+<tr class="even">
+<td align="left">20</td>
+<td align="left">MSI_CONFIG_VECTOR</td>
+<td align="left">2</td>
+<td align="left">RW</td>
+<td align="left">コントロール用キューのMSIベクタ番号</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">（</td>
+<td align="left">MSI有効時のみ存在）</td>
+</tr>
+<tr class="even">
+<td align="left">22</td>
+<td align="left">MSI_QUEUE_VECTOR</td>
+<td align="left">2</td>
+<td align="left">RW</td>
+<td align="left">QUEUE_SELで指定されたキューのMSIベクタ番号</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">（</td>
+<td align="left">MSI有効時のみ存在）</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>virtio-net specific header</caption>
+<thead>
+<tr class="header">
+<th align="left">offset</th>
+<th align="left">field name</th>
+<th align="left">bytes</th>
+<th align="left">direction</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">MAC</td>
+<td align="left">6</td>
+<td align="left">RW</td>
+<td align="left">MACアドレス</td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="left">STATUS</td>
+<td align="left">2</td>
+<td align="left">RO リ</td>
+<td align="left">ンクアップ状態などのvirtio-net固有ステータス</td>
+</tr>
+<tr class="odd">
+<td align="left">8</td>
+<td align="left">MAX_VIRTQUEUE_PAIRS</td>
+<td align="left">2</td>
+<td align="left">RO 最</td>
+<td align="left">大RX／TXキュー数（マルチキュー用）</td>
+</tr>
+</tbody>
+</table>
+<h1 id="virtio-pci-デバイスの初期化処理">Virtio PCI デバイスの初期化処理</h1>
+<p>ゲストOSにおけるVirtio PCIを用いたvirtioデバイスの初期化処理は次のようになります。</p>
+<h4 id="step-1">Step 1</h4>
+<p>通常のPCIデバイスの初期化ルーチンを実行し、Vendor ID・Device IDがvirtioのものを発見します。</p>
+<h4 id="step-2">Step 2</h4>
+<p>デバイスのPCI I/O Spaceのマップ先アドレスを取得し、Virtio HeaderのSTATUSフィールドにACKNOWLEDGEビットをセットします(STATUSフィールドが用いるビット値は表5に記載)。</p>
+<h4 id="step-3">Step 3</h4>
+<p>Subsystem Device IDに一致するドライバをロードします。たとえばIDが1の場合はvirtio-netをロードします。</p>
+<h4 id="step-4">Step 4</h4>
+<p>ドライバがロードできたらVirtio HeaderのSTATUSフィールドにDRIVERビットをセットします。</p>
+<h4 id="step-5">Step 5</h4>
+<p>デバイス固有の初期化処理を実行します。virtio-netの場合、virtio-net specific headerからMACアドレスをコピーする、NICとしてネットワークサブシステムに登録するなどの処理が行われます。この時、Virtio HeaderのHOST_FEATURESフィールドで示されているデバイスで使える機能のうち、ドライバで使用したい機能のビットをGUEST_FEATURESへ書き込みます。FEATURESの全ビットの紹介は省略しますが、たとえばvirtio-netでChecksum Offloadingを使いたい場合はビット0、TSOv4を使いたい時はビット11を有効にする必要があります。</p>
+<h4 id="step-6">Step 6</h4>
+<p>デバイスに必要な数のキューをアロケート、Virtio Headerを通じてホストへアドレスを通知します(「キューのアロケート処理」に詳述)。</p>
+<h4 id="step-7">Step 7</h4>
+<p>ドライバの初期化処理がすべて成功したらVirtio HeaderのSTATUSフィールドにDRIVER_OKビット、途中で失敗したらFAILEDビットをセットします。</p>
+<table>
+<caption>device status</caption>
+<thead>
+<tr class="header">
+<th align="left">bit</th>
+<th align="left">name</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">ACKNOWLEDGE</td>
+<td align="left">ゲストOSはデバイスを発見</td>
+</tr>
+<tr class="even">
+<td align="left">2</td>
+<td align="left">DRIVER</td>
+<td align="left">ゲストOSはデバイス向けのドライバを保有</td>
+</tr>
+<tr class="odd">
+<td align="left">3</td>
+<td align="left">DRIVER_OK</td>
+<td align="left">ゲストOSはドライバ初期化を完了</td>
+</tr>
+<tr class="even">
+<td align="left">7</td>
+<td align="left">FAILED</td>
+<td align="left">初期化失敗</td>
+</tr>
+</tbody>
+</table>
+<h1 id="キューのアロケート処理">キューのアロケート処理</h1>
+<p>「Virtio PCIデバイスの初期化処理」の第6段階で言及したキューのアロケート処理は、次のような手順をキューごとに実施する必要があります。たとえばvirtio-netの場合は3つのキューが必要なので、3回繰り返します。</p>
+<h4 id="step-1-1">Step 1</h4>
+<p>設定を行うキューの番号をVirtio HeaderのQUEUE_SELフィールドに書き込みます。</p>
+<h4 id="step-2-1">Step 2</h4>
+<p>Virtio HeaderのQUEUE_NUMフィールドを読み込みます。この値がこれから設定を行うキューのキュー長になります。値が0だった場合、ホスト側はこの番号のキューを使うことを認めていないため使用できません。</p>
+<h4 id="step-3-1">Step 3</h4>
+<p>キューに使うメモリ領域をアロケートします。アロケートするサイズはキュー長に合わせたサイズで、先頭アドレスはページサイズにアラインされている必要があります。</p>
+<h4 id="step-4-1">Step 4</h4>
+<p>メモリ領域の先頭アドレスの物理ページ番号をVirtio HeaderのQUEUE_PFNにセットします。</p>
+<h4 id="step-5-1">Step 5</h4>
+<p>MSI割り込みが有効な場合、Virtio HeaderのMSI_CONFIG_VECTORフィールドまたはMSI_QUEUE_VECTORフィールドに割り込みベクタ番号を書き込みます。どちらのフィールドに書き込むかはキューがコントロール用キューか否かによって異なります。</p>
+<h1 id="まとめ">まとめ</h1>
+<p>virtioの概要とVirtio PCIの実装について解説しました。次回はいよいよVirtqueueとこれを用いたNIC(virtio-net)の実現方法について見ていきます。</p>
+<h1 id="ライセンス">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+<h1>参考文献</h1>
+<p>“第１回 X86アーキテクチャにおける仮想化の歴史とIntel VT-X.” <a href="http://syuu1228.github.io/howto_implement_hypervisor/part1.pdf">http://syuu1228.github.io/howto_implement_hypervisor/part1.pdf</a>.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>virtioとは異なる独自方式のドライバが用いられています。<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>PCではCONFIG_ADDRESSレジスタはI/O空間の0xCF8にマップされています。<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>PCではCONFIG_DATAレジスタはI/O空間の0xCFCにマップされています。<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>PCではI/O空間にマップされますが、他のアーキテクチャではメモリマップされる場合もあります。<a href="#fnref4">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
