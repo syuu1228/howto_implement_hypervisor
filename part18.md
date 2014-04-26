@@ -3,7 +3,7 @@ authors:
 - 'Takuya ASADA syuu@dokukino.com'
 title: |
     ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
-    第１８回　FreeBSD 10.0-RELEASE公開記念 10.0-RELEASEで学ぶBHyVeの使い方
+    第１８回　FreeBSD 10.0-RELEASE公開記念 10.0-RELEASEで学ぶbhyveの使い方
 ...
 
 はじめに
