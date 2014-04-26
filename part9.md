@@ -6,12 +6,12 @@ title: |
     第９回 Intel VT-xを用いたハイパーバイザの実装その４「vmm.koへのVMExit」
 ...
 
-## はじめに
+# はじめに
 
 前回は、vmm.koがVM_RUN ioctlを受け取ってからVMEntryするまでの処理を解説しました。
 今回はVMX non root modeからvmm.koへVMExitしてきたときの処理を解説します。
 
-## 解説対象のソースコードについて
+# 解説対象のソースコードについて
 
 本連載では、FreeBSD-CURRENTに実装されているBHyVeのソースコードを解説しています。
 
@@ -19,9 +19,9 @@ title: |
 
 svn co -r245673 svn://svn.freebsd.org/base/head src
 
-## /usr/sbin/bhyveによる仮想CPUの実行処理のおさらい
+# /usr/sbin/bhyveによる仮想CPUの実行処理のおさらい
 
-/usr/sbin/bhyveは仮想CPUの数だけスレッドを起動し、それぞれのスレッドが/dev/vmm/${name}に対してVM_RUN ioctlを発行します(図[fig1])。
+/usr/sbin/bhyveは仮想CPUの数だけスレッドを起動し、それぞれのスレッドが/dev/vmm/\${name}に対してVM_RUN ioctlを発行します(図1)。
 vmm.koはioctlを受けてCPUをVMX non root modeへ切り替えゲストOSを実行します(これがVMEntryです)。
 
 ![VM_RUN ioctlによる仮想CPUの実行イメージ](figures/part9_fig1 "図1")
@@ -33,7 +33,7 @@ VMX non root modeでハイパーバイザの介入が必要な何らかのイベ
 
 今回は、VMX non root modeからvmm.koへVMExitしてきたときの処理を見ていきます。
 
-## vmm.koがVM_RUN ioctlを受け取ってからVMEntryするまで
+# vmm.koがVM_RUN ioctlを受け取ってからVMEntryするまで
 
 
 vmm.koがVM_RUN ioctlを受け取ってからVMEntryするまでの処理について、順を追って見ていきます。
@@ -49,11 +49,11 @@ vmx_longjmpはvmx_setjmpと対になっている関数で、POSIX APIのsetjmp/l
 
 では、以上のことをふまえてソースコードの詳細を見ていきましょう。リスト1、リスト2、リスト3に示します。解説キャプションの番号は、注目すべき処理の順番を示します。
 
-[^1]: すでに前回までの記事でも「RIP」と表記していますが、なんのことだろうと思った方もいらっしゃるかもしれません。
-    これは、x86_64アーキテクチャでの64bit幅のEIPレジスタ(インストラクションポインタ)の名前です。
+[^1]: すでに前回までの記事でも「RIP」と表記していますが、なんのことだろうと思った方もいらっしゃるかもしれません。  
+    これは、x86_64アーキテクチャでの64bit幅のEIPレジスタ(インストラクションポインタ)の名前です。  
     ほかにもEAX、EBXレジスタがRAX、RBXのような名前になっています。
 
-### sys/amd64/vmm/intel/vmx.c
+## sys/amd64/vmm/intel/vmx.c
 
 intel/ディレクトリにはIntel VT-xに依存したコード群が置かれています。
 今回はゲストマシン実行ループの中心となるvmx_runと、VMExitのハンドラ関数であるvmx_exit_processを解説します。
@@ -128,31 +128,29 @@ intel/ディレクトリにはIntel VT-xに依存したコード群が置かれ�
 1481:  	return (0);
 ......(省略)......
 1490:  }
-
-
-(20) Exit Qualificationを取り出し。
-(21) IO命令でVMExitした場合、Exit Reason 30（EXIT_REASON_INOUT）となる。
-(22) Exit Reasonを代入。
-(23) Exit Qualificationからアクセス幅を代入。
-(24) Exit Qualificationからアクセス方向を代入。
-(25) Exit QualificationからString命令かどうかのフラグを代入。
-(26) Exit Qualificationからrep prefix付きかどうかのフラグを代入。
-(27) Exit Qualificationからポート番号を代入。
-(28) raxレジスタの値を代入。
-(29) EXIT_REASON_INOUTでは、ユーザランドでのエミュレーション処理
-     を要求するためhandled = 0を返す。
-(13) vmx_returnからここへリターンされてくる。
-     返り値としてVMX_RETURN_LONGJMPを返す。
-(14) rcはVMX_RETURN_LONGJMP。
-(15) VMCSからゲストOSのRIPを取得してvm_exit構造体にセット。
-(16) VMCSからRIPが指している命令の命令長を取得してvm_exit構造体にセット。
-(17) VMCSからExit reasonを取得してvm_exit構造体にセット。
-(18) VMCSからExit qualificationを取得してvm_exit構造体にセット。
-(19) vmx_exit_processでExit reasonに応じた処理を実行。
-(30) handled = 0が返ったため、ループを抜けvmx_runから抜ける。
 ```
 
-### sys/amd64/vmm/intel/vmx_support.S
+- \(20) Exit Qualificationを取り出し。
+- \(21) IO命令でVMExitした場合、Exit Reason 30（EXIT_REASON_INOUT）となる。
+- \(22) Exit Reasonを代入。
+- \(23) Exit Qualificationからアクセス幅を代入。
+- \(24) Exit Qualificationからアクセス方向を代入。
+- \(25) Exit QualificationからString命令かどうかのフラグを代入。
+- \(26) Exit Qualificationからrep prefix付きかどうかのフラグを代入。
+- \(27) Exit Qualificationからポート番号を代入。
+- \(28) raxレジスタの値を代入。
+- \(29) EXIT_REASON_INOUTでは、ユーザランドでのエミュレーション処理を要求するためhandled = 0を返す。
+- \(13) vmx_returnからここへリターンされてくる。  
+        返り値としてVMX_RETURN_LONGJMPを返す。
+- \(14) rcはVMX_RETURN_LONGJMP。
+- \(15) VMCSからゲストOSのRIPを取得してvm_exit構造体にセット。
+- \(16) VMCSからRIPが指している命令の命令長を取得してvm_exit構造体にセット。
+- \(17) VMCSからExit reasonを取得してvm_exit構造体にセット。
+- \(18) VMCSからExit qualificationを取得してvm_exit構造体にセット。
+- \(19) vmx_exit_processでExit reasonに応じた処理を実行。
+- \(30) handled = 0が返ったため、ループを抜けvmx_runから抜ける。
+
+## sys/amd64/vmm/intel/vmx_support.S
 
 vmx_support.SはC言語で記述できない、コンテキストの退避/復帰やVT-x拡張命令の発行などのコードを提供しています。
 今回は、vmx_setjmp・vmx_longjmpを解説します。
@@ -245,25 +243,23 @@ vmx_support.SはC言語で記述できない、コンテキストの退避/復�
  180:  	addq	$VMXCTX_TMPSTKTOP,%rsp
  181:  	callq	vmx_return                                          (7)
  182:  END(vmx_longjmp)
-
-
-(1) スタック上のリターンアドレスを%raxに取り出す。
-(2) 以下の行では、VMEntry時にVMCSへ自動保存されない
-    ホストOSのレジスタをvmxctx構造体へ保存している。
-(3) %raxに取り出したリターンアドレスをvmxctx構造体のhost_ripメンバに保存。
-    ここまでがVMExit前に行われている処理。
-(8) 以下の行では、VMExit時にVMCSから自動復帰されなかったホストOSのレジスタを復帰している。
-(10) vmxctx構造体のhost_ripメンバから%raxへリターンアドレスをコピー。
-(11) リターンアドレスをスタックにセット。
-(12) 11でセットしたアドレスへリターン。
-(4) VMExit時にはここから実行が再開される。
-    以降の行で参照されている%rspはVMEntry時に自動保存され、VMExit時に自動復帰されている。
-(5) 以下の行では、VMExit時にVMCSへ自動保存されなかったゲストOSのレジスタを保存している。
-(6) 返り値としてVMX_RETURN_LONGJMPを指定。
-(7) vmx_returnを呼び出してホストOSのレジスタを復帰する。
 ```
 
-### sys/amd64/vmm/vmm.c
+- \(1) スタック上のリターンアドレスを%raxに取り出す。
+- \(2) 以下の行では、VMEntry時にVMCSへ自動保存されないホストOSのレジスタをvmxctx構造体へ保存している。
+- \(3) %raxに取り出したリターンアドレスをvmxctx構造体のhost_ripメンバに保存。  
+       ここまでがVMExit前に行われている処理。
+- \(8) 以下の行では、VMExit時にVMCSから自動復帰されなかったホストOSのレジスタを復帰している。
+- \(10) vmxctx構造体のhost_ripメンバから%raxへリターンアドレスをコピー。
+- \(11) リターンアドレスをスタックにセット。
+- \(12) 11でセットしたアドレスへリターン。
+- \(4) VMExit時にはここから実行が再開される。  
+       以降の行で参照されている%rspはVMEntry時に自動保存され、VMExit時に自動復帰されている。
+- \(5) 以下の行では、VMExit時にVMCSへ自動保存されなかったゲストOSのレジスタを保存している。
+- \(6) 返り値としてVMX_RETURN_LONGJMPを指定。
+- \(7) vmx_returnを呼び出してホストOSのレジスタを復帰する。
+
+## sys/amd64/vmm/vmm.c
 
 vmm.cは、Intel VT-xとAMD-Vの2つの異なるハードウェア仮想化支援機能のラッパー関数を提供しています。
 今回はvmx_runのラッパー関数のvm_runを解説します。
@@ -288,14 +284,13 @@ vmm.cは、Intel VT-xとAMD-Vの2つの異なるハードウェア仮想化支�
  710:  	bcopy(&vcpu->exitinfo, vme, sizeof(struct vm_exit));        (32)
 ......(省略)......
  757:  }
-
-
-(31) vmx_runはEXIT_REASON_INOUTをハンドルしてここへ抜けてくる。
-(32) vm_exit構造体の値はユーザランドへの返り値としてここでコピーされる。
 ```
 
+- \(31) vmx_runはEXIT_REASON_INOUTをハンドルしてここへ抜けてくる。
+- \(32) vm_exit構造体の値はユーザランドへの返り値としてここでコピーされる。
 
-## まとめ
+
+# まとめ
 
 VMX non root modeからvmm.koへVMExitしてきたときの処理について、ソースコードを解説しました。
 次回は、I/O命令によるVMExitを受けて行われるユーザランドでのエミュレーション処理について見ていきます。
@@ -306,3 +301,6 @@ VMX non root modeからvmm.koへVMExitしてきたときの処理について、
 Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
+
+参考文献
+========
