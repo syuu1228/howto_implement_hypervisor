@@ -58,9 +58,8 @@ vmx_longjmpはvmx_setjmpと対になっている関数で、POSIX APIのsetjmp/l
 intel/ディレクトリにはIntel VT-xに依存したコード群が置かれています。
 今回はゲストマシン実行ループの中心となるvmx_runと、VMExitのハンドラ関数であるvmx_exit_processを解説します。
 
+### リスト1 sys/amd64/vmm/intel/vmx.c
 ```
-リスト1 sys/amd64/vmm/intel/vmx.c
-
 ......(省略)......
 1197:  static int
 1198:  vmx_exit_process(struct vmx *vmx, int vcpu, struct vm_exit *vmexit)
@@ -156,9 +155,8 @@ vmx_support.SはC言語で記述できない、コンテキストの退避/復�
 今回は、vmx_setjmp・vmx_longjmpを解説します。
 
 
+### リスト2 sys/amd64/vmm/intel/vmx_support.S
 ```
-リスト2 sys/amd64/vmm/intel/vmx_support.S
-
 ......(省略)......
  100:  /*
  101:   * int vmx_setjmp(ctxp)
@@ -264,9 +262,8 @@ vmx_support.SはC言語で記述できない、コンテキストの退避/復�
 vmm.cは、Intel VT-xとAMD-Vの2つの異なるハードウェア仮想化支援機能のラッパー関数を提供しています。
 今回はvmx_runのラッパー関数のvm_runを解説します。
 
+### リスト3 sys/amd64/vmm/vmm.c
 ```
-リスト3 sys/amd64/vmm/vmm.c
-
 ......(省略)......
  672:  int
  673:  vm_run(struct vm *vm, struct vm_run *vmrun)
@@ -301,6 +298,3 @@ VMX non root modeからvmm.koへVMExitしてきたときの処理について、
 Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
-
-参考文献
-========
