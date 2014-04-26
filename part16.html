@@ -1,0 +1,426 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１６回 PCIパススルーその２「VT-dの詳細」</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１６回 PCIパススルーその２「VT-dの詳細」</p></h1>
+</div>
+<h1 id="はじめに">はじめに</h1>
+<p>前回は、PCIパススルーとIOMMUの概要について解説しました。 今回は、VT-dの詳細について解説していきます。</p>
+<h1 id="前回のおさらい">前回のおさらい</h1>
+<p>PCIデバイスが持つメモリ空間をゲストマシンのメモリ空間にマップすることによりPCIデバイスをパススルー接続できますが、DMAを使用するときに1つ困った問題が生じます。</p>
+<p>PCIデバイスはDMA時のアドレス指定にホスト物理アドレスを使用します。ゲストOSは、ゲストOSは自分が持つゲスト物理ページとホスト物理ページの対応情報を持っていないので正しいページ番号をドライバに与えることができません。</p>
+<p>そこで、<em>物理メモリとPCIデバイスの間にMMUのような装置を置きアドレス変換を行う</em>方法が考え出されました。 このような装置を<em>IOMMU</em>と呼びます。 DMA転送時にアドレス変換を行うことで、パススルーデバイスが正しいページへデータを書き込めるようになります（図1）。 Intel VT-dは、このような機能を実現するためにチップセットへ搭載されたIOMMUです。</p>
+<div class="figure">
+<img src="figures/part16_fig1.png" title="IOMMUを用いたDMA時のアドレス変換" alt="IOMMUを用いたDMA時のアドレス変換" /><p class="caption">IOMMUを用いたDMA時のアドレス変換</p>
+</div>
+<h1 id="vt-dの提供する機能">VT-dの提供する機能</h1>
+<p>VT-dが提供する機能には、次のようなものが挙げられます。</p>
+<ul>
+<li>IO device assignment：特定のデバイスを特定のVMに割り当てるための機能</li>
+<li>DMA remapping：仮想マシン上へDMAするためにアドレス変換を行う機能</li>
+<li>Interrupt remapping：特定のデバイスから特定のVMへ届くように割り込みをルーティングする機能</li>
+<li>Reliability: DMA・割り込みエラーをシステムソフトウェアに記録・レポートできる</li>
+</ul>
+<p>今回はVT-dによるアドレス変換の話を解説することを目的としているため、このうち&quot;DMA remapping&quot;機能に絞って解説を進めていきます<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>。</p>
+<p>なお、VT-dに関するより詳しい内容は&quot;Intel Virtualization Technology for Directed I/O Architecture Specification&quot;という資料にて解説されているので、こちらをご覧下さい<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>。</p>
+<h2 id="アドレス変換テーブル">アドレス変換テーブル</h2>
+<p>VT-dでは、アドレスリマップ対象のデバイスごとにCPUのMMUと同様の多段ページテーブルを持ちます。 デバイスごとのページテーブルを管理するため、PCIデバイスを一意に識別するBus Number・Device Number・Functionの識別子から対応するページテーブルを探すための2段のテーブルを用います。</p>
+<p>1段目はRoot Tableと呼ばれ、0から255までのBusナンバーに対応するエントリからなるテーブルです。 このテーブルはアドレス変換時にVT-dから参照するため、Root Table Address Registerへセットされます。 Root Tableエントリのフォーマットを表1に示します。</p>
+<table>
+<caption>Root table entry format</caption>
+<thead>
+<tr class="header">
+<th align="left">bits</th>
+<th align="left">field</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">127:64</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+<tr class="even">
+<td align="left">63:12</td>
+<td align="left">context-table pointer</td>
+<td align="left">Context-tableのアドレス</td>
+</tr>
+<tr class="odd">
+<td align="left">11:1</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="left">present</td>
+<td align="left">このエントリが有効化どうか</td>
+</tr>
+</tbody>
+</table>
+<p>Root tableエントリはcontext-table pointerフィールドで2段目のテーブルであるContext-tableのアドレスを指します。 Context-tableはRoot tableエントリで示されるBus上に存在するDevice 0-31・Function 0-7の各デバイスに対応するページテーブルを管理しています。 Context-tableエントリのフォーマットを表2に示します。</p>
+<table>
+<caption>Context-table entry format</caption>
+<col width="7%" />
+<col width="35%" />
+<col width="57%" />
+<thead>
+<tr class="header">
+<th align="left">bits</th>
+<th align="left">field</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">127:88</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+<tr class="even">
+<td align="left">87:72</td>
+<td align="left">domain identifier</td>
+<td align="left">ドメインID このエントリがどのVMに属するかを示す</td>
+</tr>
+<tr class="odd">
+<td align="left">71</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+<tr class="even">
+<td align="left">70:67</td>
+<td align="left">ignored</td>
+<td align="left">無視されるフィールド</td>
+</tr>
+<tr class="odd">
+<td align="left">66:64</td>
+<td align="left">address width</td>
+<td align="left">ページテーブルの段数を示す (0x0:2段、0x1:3段、0x2:4段、0x3:5段、0x4:6段)</td>
+</tr>
+<tr class="even">
+<td align="left">63:12</td>
+<td align="left">second level page translation pointer</td>
+<td align="left">アドレス変換に使用するページテーブルエントリのアドレスを指定する</td>
+</tr>
+<tr class="odd">
+<td align="left">11:4</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+<tr class="even">
+<td align="left">3:2</td>
+<td align="left">translation type</td>
+<td align="left">アドレス変換時の挙動を設定</td>
+</tr>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">fault processing disable</td>
+<td align="left">0x0 :フォールトレコード・レポートを有効化 0x1 :フォールトレコード・レポートを無効化</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="left">present</td>
+<td align="left">このエントリが有効化どうか</td>
+</tr>
+</tbody>
+</table>
+<p>Context-tableエントリはsecond level page translation pointerでページテーブルのアドレスを指します。 ページテーブルの段数はaddress widthフィールドで指定されます。 図2に4段ページテーブル・4KBページを使用する場合のアドレス変換テーブルの全体図を示します。 ここで使用されるページテーブルエントリのフォーマットは通常のページテーブルエントリと若干異なるのですが、ここでは解説は割愛します。</p>
+<div class="figure">
+<img src="figures/part16_fig2.png" title="VT-dのアドレス変換テーブル全体図(例)" alt="VT-dのアドレス変換テーブル全体図(例)" /><p class="caption">VT-dのアドレス変換テーブル全体図(例)</p>
+</div>
+<h2 id="フォールト">フォールト</h2>
+<p>変換対象になるアドレスに対する有効なページ割り当てが存在しない場合、または対象ページへのアクセス権がない場合、VT-dはフォールトを起こします。 フォールトが発生した場合、メモリアクセスを行おうとしたPCIデバイスはアクセスエラーを受け取ります。 OSへは、MSI割り込みを使用して通知されます。</p>
+<h2 id="iotlb">IOTLB</h2>
+<p>IOMMUのアドレス変換を高速に行うには、通常のMMUと同じようにアドレス変換結果のキャッシュが必要です。 通常のMMUではこのような機構のことをTLBを呼びますが、IOMMUではIOTLBと呼びます。 通常のMMUのTLBでは、TLBエントリが古くなったときにinvalidateと呼ばれる操作によりエントリを削除します。 このときのinvalidateの粒度は、グローバルなinvalidate・プロセス単位のinvalidate(<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:・ページ単位のinvalidateなどが選べます。 VT-dのIOTLBでは、グローバルなinvalidate・デバイス単位のinvalidate・VM単位（ドメインと呼ばれる）のinvalidate・ページ単位のinvalidateが行えるようになっています。</p>
+<h2 id="context-cache">Context-cache</h2>
+<p>IOTLBに類似していますが、VT-dではContext-table entryもキャッシュされています。これについても場合によってinvalidate操作が必要になります。</p>
+<h1 id="dmarによるiommuの通知">DMARによるIOMMUの通知</h1>
+<p>DMAリマッピング機能がハードウェア上に存在することをOSに伝えるため、ACPIはDMARと呼ばれるテーブルを用意しています。 DMARでは、いくつかの異なる種類の情報が列挙されています。</p>
+<p>IOMMUはDMA Remapping Hardware Unit Definition(DRHD)という名前の構造体で記述されており、他にDMAに用いることのできない予約済みメモリ領域を示すReserved Memory Region Reporting(RMRR)などが存在します。 DRHDはIOMMUのレジスタベースアドレスと、IOMMUがDMAリマッピング対象にしているPCIデバイスのリストを持ちます。</p>
+<p>VT-dの設定をOS上から簡単に確認することは難しいですが、ACPIテーブルは簡単に見ることができるので、ここでその方法を説明します。 例としてUbuntu LinuxでDMARを表示するコマンドを画面1に示します。</p>
+<h2 id="画面1-dmar表示コマンドubuntu-linux">画面1 DMAR表示コマンド(Ubuntu Linux)</h2>
+<pre><code>$ sudo apt-get install iasl
+$ sudo cp /sys/firmware/acpi/tables/DMAR .
+$ sudo iasl -d DMAR
+Intel ACPI Component Architecture
+AML Disassembler version 20100528 [Dec 19 2012]
+Copyright (c) 2000 - 2010 Intel Corporation
+Supports ACPI Specification Revision 4.0a
+Loading Acpi table from file DMAR
+Acpi Data Table [DMAR] decoded, written to &quot;DMAR.dsl&quot;
+syuu@hiratake:~$ cat DMAR.dsl
+/*
+* Intel ACPI Component Architecture
+* AML Disassembler version 20100528
+*
+* Disassembly of DMAR, Mon Nov 25 09:11:42 2013
+*
+* ACPI Data Table [DMAR]
+*
+* Format: [HexOffset DecimalOffset ByteLength]  FieldName : FieldValue
+*/
+[000h 0000  4]                    Signature : &quot;DMAR&quot;    /* DMA Remapping table */
+[004h 0004  4]                 Table Length : 00000130
+[008h 0008  1]                     Revision : 01
+[009h 0009  1]                     Checksum : 22
+[00Ah 0010  6]                       Oem ID : &quot;AMI&quot;
+[010h 0016  8]                 Oem Table ID : &quot;OEMDMAR&quot;
+[018h 0024  4]                 Oem Revision : 00000001
+[01Ch 0028  4]              Asl Compiler ID : &quot;MSFT&quot;
+[020h 0032  4]        Asl Compiler Revision : 00000097
+[024h 0036  1]           Host Address Width : 26
+[025h 0037  1]                        Flags : 01
+[030h 0048  2]                Subtable Type : 0000 &lt;Hardware Unit Definition&gt;
+[032h 0050  2]                       Length : 0020
+[034h 0052  1]                        Flags : 01
+[035h 0053  1]                     Reserved : 00
+[036h 0054  2]           PCI Segment Number : 0000
+[038h 0056  8]        Register Base Address : 00000000FBFFE000
+[040h 0064  1]      Device Scope Entry Type : 03
+[041h 0065  1]                 Entry Length : 08
+[042h 0066  2]                     Reserved : 0000
+[044h 0068  1]               Enumeration ID : 06
+[045h 0069  1]               PCI Bus Number : F0
+[046h 0070  2]                     PCI Path : [1F, 07]
+[048h 0072  1]      Device Scope Entry Type : 03
+[049h 0073  1]                 Entry Length : 08
+[04Ah 0074  2]                     Reserved : 0000
+[04Ch 0076  1]               Enumeration ID : 07
+[04Dh 0077  1]               PCI Bus Number : 00
+[04Eh 0078  2]                     PCI Path : [13, 00]
+[050h 0080  2]                Subtable Type : 0001 &lt;Reserved Memory Region&gt;
+[052h 0082  2]                       Length : 0058
+[054h 0084  2]                     Reserved : 0000
+[056h 0086  2]           PCI Segment Number : 0000
+[058h 0088  8]                 Base Address : 00000000000EC000
+[060h 0096  8]          End Address (limit) : 00000000000EFFFF
+〜　略　〜</code></pre>
+<p>Hardware Unit Definitionと表示されているのがDRHDで、Reserved Memory Regionと表示されているのがRMRRです。</p>
+<p>このテーブルの情報が誤っていると、BIOSとカーネルでVT-dを有効にしてもLinuxカーネルがエラーを起こしてPCIパススルーが正常に動作しない場合があります<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>。</p>
+<h2 id="vt-dのレジスタ">VT-dのレジスタ</h2>
+<p>VT-dで使用される主なレジスタを表3に示します。 VT-dのレジスタはメモリマップドでアクセスでき、ベースアドレスは前述のDMAR上のDRHDで通知されます。</p>
+<table>
+<caption>VT-dの主なレジスタ</caption>
+<thead>
+<tr class="header">
+<th align="left">offset</th>
+<th align="left">name</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">008h</td>
+<td align="left">capability register</td>
+<td align="left">VT-d上の機能の有無を示す</td>
+</tr>
+<tr class="even">
+<td align="left">010h</td>
+<td align="left">extended capability register</td>
+<td align="left">追加のcapabilityレジスタ</td>
+</tr>
+<tr class="odd">
+<td align="left">018h</td>
+<td align="left">global command register</td>
+<td align="left">VT-dの操作を行う</td>
+</tr>
+<tr class="even">
+<td align="left">01ch</td>
+<td align="left">global status register</td>
+<td align="left">VT-dのステートを通知</td>
+</tr>
+<tr class="odd">
+<td align="left">020h</td>
+<td align="left">root table address register</td>
+<td align="left">Root tableのアドレスを設定</td>
+</tr>
+<tr class="even">
+<td align="left">028h</td>
+<td align="left">context command register</td>
+<td align="left">context-cacheを操作</td>
+</tr>
+<tr class="odd">
+<td align="left">034h</td>
+<td align="left">fault status register</td>
+<td align="left">フォールトを通知</td>
+</tr>
+<tr class="even">
+<td align="left">XXXh</td>
+<td align="left">invalidate address register</td>
+<td align="left">IOTLB invalidate時のアドレス指定</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">invalidate address registerのアドレスは</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">extended capability registerで定義</td>
+</tr>
+<tr class="odd">
+<td align="left">XXXh+008h</td>
+<td align="left">IOTLB invalidate register</td>
+<td align="left">IOTLB invalidateを実行</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vt-dの有効化">VT-dの有効化</h2>
+<p>VT-dを有効化し、DMAリマップを行うには以下のような手順で設定を行います。</p>
+<p>設定完了までウエイトするために、global status registerのtranslation enable statusにビットが立つまでループします。</p>
+<ol style="list-style-type: decimal">
+<li>メモリ上にルートテーブル、コンテキストテーブルを作成</li>
+<li>root table address registerにroot tableのアドレスを設定し、global command registerにset root table pointerをセット（表４）してroot tableのアドレスを設定します。 設定完了までウエイトするために、global status registerのroot table pointer statusにビットが立つまで（表５）ループします</li>
+<li>IOTLB、Context-cacheをinvalidateします（細かい手順は省略します）</li>
+<li>global command registerにtranslation enableをセットしてDMAリマッピングを有効化します</li>
+</ol>
+<table>
+<caption>global command register</caption>
+<thead>
+<tr class="header">
+<th align="left">bits</th>
+<th align="left">field</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">31</td>
+<td align="left">translation enable</td>
+<td align="left">DMA remapping 有効・無効化</td>
+</tr>
+<tr class="even">
+<td align="left">30</td>
+<td align="left">set root table pointer</td>
+<td align="left">root table pointer のセット・アップデート</td>
+</tr>
+<tr class="odd">
+<td align="left">29</td>
+<td align="left">set fault log</td>
+<td align="left">fault log pointer のセット・アップデート</td>
+</tr>
+<tr class="even">
+<td align="left">28</td>
+<td align="left">enable advanced fault logging</td>
+<td align="left">advanced fault logging 有効・無効化</td>
+</tr>
+<tr class="odd">
+<td align="left">27</td>
+<td align="left">write buffer flush</td>
+<td align="left">write buffer を flush</td>
+</tr>
+<tr class="even">
+<td align="left">26</td>
+<td align="left">queued invalidation enable</td>
+<td align="left">queue invalidation 有効・無効化</td>
+</tr>
+<tr class="odd">
+<td align="left">25</td>
+<td align="left">interrupt remapping enable</td>
+<td align="left">interrupt remaping 有効・無効化</td>
+</tr>
+<tr class="even">
+<td align="left">24</td>
+<td align="left">set interrupt remap table pointer</td>
+<td align="left">interrupt remap table pointer のセット・アップデート</td>
+</tr>
+<tr class="odd">
+<td align="left">23</td>
+<td align="left">compatibility format interrupt</td>
+<td align="left">compatibility format interrupt 有効・無効化</td>
+</tr>
+<tr class="even">
+<td align="left">22:00</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>global status register</caption>
+<thead>
+<tr class="header">
+<th align="left">bits</th>
+<th align="left">field</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">31</td>
+<td align="left">translation enable status</td>
+<td align="left">DMA remappingの状態</td>
+</tr>
+<tr class="even">
+<td align="left">30</td>
+<td align="left">root table pointer status</td>
+<td align="left">root table pointerの状態</td>
+</tr>
+<tr class="odd">
+<td align="left">29</td>
+<td align="left">fault log status</td>
+<td align="left">fault log pointerの状態</td>
+</tr>
+<tr class="even">
+<td align="left">28</td>
+<td align="left">advanced fault logging status</td>
+<td align="left">advanced fault loggingの状態</td>
+</tr>
+<tr class="odd">
+<td align="left">27</td>
+<td align="left">write buffer flush status</td>
+<td align="left">write buffer flushの状態</td>
+</tr>
+<tr class="even">
+<td align="left">26</td>
+<td align="left">queued invalidation enable status</td>
+<td align="left">queue invalidation enableの状態</td>
+</tr>
+<tr class="odd">
+<td align="left">25</td>
+<td align="left">interrupt remapping enable status</td>
+<td align="left">interrupt remapingの状態</td>
+</tr>
+<tr class="even">
+<td align="left">24</td>
+<td align="left">interrupt remap table pointer status</td>
+<td align="left">interrupt remap table pointerの状態</td>
+</tr>
+<tr class="odd">
+<td align="left">23</td>
+<td align="left">compatibility format interrupt status</td>
+<td align="left">compatibility format interruptの状態</td>
+</tr>
+<tr class="even">
+<td align="left">22:00</td>
+<td align="left">reserved</td>
+<td align="left">予約フィールド</td>
+</tr>
+</tbody>
+</table>
+<h1 id="まとめ">まとめ</h1>
+<p>今回は、VT-dの詳細について解説しました。 次回からは、よりソフトウェア寄りの視点から仮想化を解説していきたいと思います。</p>
+<h1 id="ライセンス">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>より正確には、DMA remapping機能のうち&quot;Requests-without-PASID&quot;であるものについてのみ解説しています。<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p><a href="http://www.intel.co.jp/content/www/jp/ja/intelligent-systems/intel-technology/vt-directed-io-spec.html">http://www.intel.co.jp/content/www/jp/ja/intelligent-systems/intel-technology/vt-directed-io-spec.html</a><a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>Tagged TLBの場合。<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>この場合、ユーザの設定ミスではなくBIOSのバグなので、対策としてはサーバベンダからBIOSアップデートを受け取るか、カーネル側でDMARを無視して強引に初期化するような方法しかありません。<a href="#fnref4">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
