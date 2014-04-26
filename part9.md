@@ -3,7 +3,7 @@ authors:
 - 'Takuya ASADA syuu@dokukino.com'
 title: |
     ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 
-    第９回 Intel VT-xを用いたハイパーバイザの実装その５「vmm.koへのVMExit」
+    第９回 Intel VT-xを用いたハイパーバイザの実装その４「vmm.koへのVMExit」
 ...
 
 ## はじめに
