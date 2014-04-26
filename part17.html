@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ハイパーバイザーの作り方 第１７回　仮想マシンの初期化とBHyVeのゲストOSローダ</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>ハイパーバイザーの作り方 第１７回　仮想マシンの初期化とBHyVeのゲストOSローダ</p></h1>
+</div>
+<h1 id="はじめに">はじめに</h1>
+<p>前回は、VT-dの詳細について解説しました。<br />今回は、仮想マシンの初期化とBHyVeのゲストOSローダについて解説していきます。</p>
+<h1 id="物理マシンの初期化と仮想マシンの初期化の違い">物理マシンの初期化と仮想マシンの初期化の違い</h1>
+<p>まず、物理マシンの初期化手順について考えていきましょう。<br />物理マシンの電源投入時には、次のような手順で初期化処理が実行されます。</p>
+<h3 id="物理的な初期化">1. 物理的な初期化</h3>
+<p>コンピュータの電源が投入されると、CPUは決められたアドレスから命令の実行を開始します。<br />このアドレスにはROMがメモリマップされており、電源投入時にCPUはROM上のファームウェア<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>の初期化ルーチンから実行を開始します。<br />電源を上げたときのレジスタ値やメモリ内容、周辺デバイスの状態は初期化されていないため不定ですが、ファームウェアが最低限の初期化を行います。</p>
+<h3 id="ファームウェアのロード">2. ファームウェアのロード</h3>
+<p>初期化が終わると、ファームウェアはブートローダまたはOSをロードします。</p>
+<h3 id="osのロード">3. OSのロード</h3>
+<p>ブートローダを実行した場合、ブートローダがOSをロードします。<br />この初期化手順はPCに限ったものではなく、スマートフォンのようなデバイスやマイコンのようなより単純なデバイスでもおおむね同じです。</p>
+<p>一般的に、CPUのレジスタやメモリ上のデータは電源を遮断すると状態を維持できないため、電源投入ごとに上述のような初期化処理を行う必要があります。</p>
+<p>しかしながら、仮想マシンはそのような物理デバイスの特性に起因する実装上の制約がなく、ホスト側でどのようにでも初期状態を設定してから実行することができます。</p>
+<h1 id="ゲストosのダイレクトブート">ゲストOSのダイレクトブート</h1>
+<p>いくつかのハイパーバイザでは、上述のような仮想マシンの特性を用いてブートローダを実行することなく、直接OSをブートするモードを実装しています。</p>
+<p>たとえばQEMU（KVM）では、以下のようなコマンドでホストOS上に置かれたLinuxカーネルをロード・ブートできます。</p>
+<pre><code>$ qemu -kernel vmlinuz -append &quot;ro root=LABEL=/&quot; -initrd initrd.img</code></pre>
+<p>BHyVeでは、今のところBIOSが実装されていません。</p>
+<p>このため、ブートセクタから起動する方式をサポートできず、ホストOS上で動作するプログラムを用いてゲストOSをロードしています。</p>
+<p>FreeBSDゲストのロードでは、FreeBSDブートローダをホストOSのユーザランドへ移植しレジスタアクセスやメモリアクセスをゲストマシンに対するアクセスで置き換えることによって、通常のブートローダと同じインターフェースを持つOSローダを実装しています。</p>
+<p>LinuxゲストやOpenBSDゲストのロードでは、同様の手法でGRUB2をホストOSへ移植することにより<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>、通常のGRUB2と同じインターフェースを持つOSローダを実装しています。</p>
+<p><strong>このとき、ゲストOSローダはゲストOSをメモリ上にロードし、レジスタの初期値を設定し、CPUのモードをプロテクトモードに切り替えてから仮想マシンを始動します。</strong></p>
+<p>これは従来ブートローダが行っていたことであり、この方法ではBIOSへ依存するブートローダをホストOS側で動作するプログラムで置き換えています。</p>
+<p>ただし、ゲストOSが実行中にBIOSを呼ぼうとするとBIOSコールハンドラが存在しないため、エラーが発生してしまってOSが正常に動作しません。</p>
+<p>これに対処するには部分的にせよBIOSサポートを導入するしかなく、そのためBHyVeでは動作しないゲストOSが存在します<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>。</p>
+<h1 id="具体的な実装方法">具体的な実装方法</h1>
+<p>BHyVeでは、VMインスタンスの作成はsysctlを用いて/dev/vmm/<VM名>を作成することにより、VMインスタンスの操作は/dev/vmm/<VM名>に対してioctlを発行することにより、VMインスタンスのメモリ空間へのアクセスは/dev/vmm/<VM名>に対してmmapすることにより行えます。</p>
+<p>ただし、これらの処理を書きやすくするためにvmmapiというライブラリが用意されているので、通常こちらを利用します。</p>
+<p>以降に行いたい操作の種類によってどのような実装を行えばよいかを示します。</p>
+<h2 id="メモリへの書き込み">メモリへの書き込み</h2>
+<p>ページテーブルの作成など、ゲストメモリ空間への書き込みはvmmapiを用いてゲストメモリ空間をmmapすることによって行います（リスト1）。</p>
+<p>まず、vm_setup_memory()でゲストマシンのメモリサイズを指定し、/dev/vmm/<VM名>をmmapしてプロセスのメモリ空間へゲストメモリ空間をマップします。</p>
+<p>次に、vm_map_gpa()へオフセットを渡すことによりポインタを取得できます。</p>
+<h4 id="リストメモリへの書き込み">リスト１，メモリへの書き込み</h4>
+<pre><code>vm_create(VM_NAME);
+ctx = vm_open(VM_NAME);
+vm_setup_memory(ctx, VM_MEM_SIZE, VM_MMAP_ALL);
+ptr = vm_map_gpa(ctx, addr, len);</code></pre>
+<h2 id="レジスタへの書き込み">レジスタへの書き込み</h2>
+<p>ゲストマシンのレジスタへの書き込みはvmmapiを通じてioctlを発行することによって行います（リスト2）。<br />セグメントレジスタとそれ以外のレジスタではVMCSのフォーマットが異なるため、APIが異なります。<br />セグメントレジスタではvm_set_desc()でbase、limit、accessを設定し、vm_set_register()でselectorを設定します。<br />その他のレジスタでは、vm_set_register()で値を設定します。</p>
+<h4 id="リストレジスタへの書き込み">リスト２，レジスタへの書き込み</h4>
+<pre><code>tx = vm_open(vm_name)
+vm_set_register(ctx, cpuno, VM_REG_GUEST_RFLAGS, val)
+
+vm_set_desc(ctx, cpuno, VM_REG_GUEST_CS, base, limit, access)
+vm_set_register(ctx, cpuno, VM_REG_GUEST_CS, selector)</code></pre>
+<h2 id="コンソールへの文字列表示">コンソールへの文字列表示</h2>
+<p>コンソールへの文字列表示に関しては、printf()やputs()を用いればよいため、vmmapiは使用しません。</p>
+<h2 id="ディスクの読み込み">ディスクの読み込み</h2>
+<p>ディスクイメージは通常のファイルであるため、通常のファイルAPIを使用できます。</p>
+<p>このため、vmmapiは使用しません。</p>
+<h1 id="簡易ローダの実装例">簡易ローダの実装例</h1>
+<p>BHyVeにおけるOSローダの実装方法を例示するため、シリアルコンソールにアスタリスクを表示し続けるだけの簡単なプログラムをゲストマシンへロードする簡易ローダを実装しました<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>。</p>
+<p>このローダを使うと、ゲストマシンが起動した最初の瞬間から、64bitモード・ページングが有効な状態で実行されます。<br />リスト3にソースコードを示します。</p>
+<h4 id="リスト簡易ロータのソースコート">リスト３，簡易ローダのソースコード</h4>
+<pre><code>#include &lt;sys/cdefs.h&gt;
+__FBSDID(&quot;$FreeBSD$&quot;);
+#include &lt;sys/param.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;machine/specialreg.h&gt;
+#include &lt;machine/vmm.h&gt;
+#include &lt;x86/segments.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;vmmapi.h&gt;
+
+#define VM_NAME         &quot;test1&quot;
+#define VM_MEM_SIZE         128 * 1024 * 1024UL
+
+#define MSR_EFER            0xc0000080
+#define CR4_PAE             0x00000020
+#define CR4_PSE             0x00000010
+#define CR0_PG              0x80000000
+#define CR0_PE          0x00000001
+#define CR0_NE          0x00000020
+
+#define PG_V            0x001
+#define PG_RW           0x002
+#define PG_U            0x004
+#define PG_PS           0x080
+
+#define ADDR_PT4        0x2000
+#define ADDR_PT3        0x3000
+#define ADDR_PT2        0x4000
+#define ADDR_GDT        0x5000
+#define ADDR_STACK      0x6000
+#define ADDR_ENTRY      0x10000
+
+#define DESC_UNUSABLE       0x00010000
+
+#define GUEST_NULL_SEL      0
+#define GUEST_CODE_SEL      1
+#define GUEST_DATA_SEL      2
+#define GUEST_GDTR_LIMIT    (3 * 8 - 1)
+
+int
+main(int argc, char** argv)
+{
+    struct vmctx *ctx;
+    uint64_t *gdt, *pt4, *pt3, *pt2;
+    int i;
+    unsigned char *entry;
+    unsigned char program[] = {・・・・(1)
+        0xb0, 0x2a,             /* mov    $0x2a,%al */
+        0xba, 0xf8, 0x03, 0x00, 0x00,   /* mov    $0x3f8,%edx */
+        0xee,               /* out    %al,(%dx) */
+        0xeb, 0xfd          /* jmp    7 &lt;loop&gt; */
+    };
+
+    vm_create(VM_NAME);・・・・(2)
+    ctx = vm_open(VM_NAME);
+    vm_setup_memory(ctx, VM_MEM_SIZE, VM_MMAP_ALL);・・・・(3)
+
+    pt4 = vm_map_gpa(ctx, ADDR_PT4, sizeof(uint64_t) * 512);・・・・(4)
+    pt3 = vm_map_gpa(ctx, ADDR_PT3, sizeof(uint64_t) * 512);
+    pt2 = vm_map_gpa(ctx, ADDR_PT2, sizeof(uint64_t) * 512);
+    gdt = vm_map_gpa(ctx, ADDR_GDT, sizeof(uint64_t) * 3);
+    entry = vm_map_gpa(ctx, ADDR_ENTRY, sizeof(program));
+    bzero(pt4, PAGE_SIZE);
+    bzero(pt3, PAGE_SIZE);
+    bzero(pt2, PAGE_SIZE);
+    for (i = 0; i &lt; 512; i++) {・・・・(5)
+        pt4[i] = (uint64_t)ADDR_PT3;
+        pt4[i] |= PG_V | PG_RW | PG_U;
+        pt3[i] = (uint64_t)ADDR_PT2;
+        pt3[i] |= PG_V | PG_RW | PG_U;
+        pt2[i] = i * (2 * 1024 * 1024);
+        pt2[i] |= PG_V | PG_RW | PG_PS | PG_U;
+    }
+
+    gdt[GUEST_NULL_SEL] = 0;・・・・(6)
+    gdt[GUEST_CODE_SEL] = 0x0020980000000000;
+    gdt[GUEST_DATA_SEL] = 0x0000900000000000;
+
+    memcpy(entry, program, sizeof(program));・・・・(7)
+
+    vm_set_desc(ctx, 0, VM_REG_GUEST_CS, 0, 0, 0x0000209B);・・・・(8)
+    vm_set_desc(ctx, 0, VM_REG_GUEST_DS, 0, 0, 0x00000093);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_ES, 0, 0, 0x00000093);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_FS, 0, 0, 0x00000093);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_GS, 0, 0, 0x00000093);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_SS, 0, 0, 0x00000093);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_TR, 0, 0, 0x0000008b);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_LDTR, 0, 0, DESC_UNUSABLE);
+    vm_set_desc(ctx, 0, VM_REG_GUEST_GDTR, ADDR_GDT, GUEST_GDTR_LIMIT, 0);・・・・(9)
+
+    vm_set_register(ctx, 0, VM_REG_GUEST_CS, GSEL(GUEST_CODE_SEL, SEL_KPL));
+    vm_set_register(ctx, 0, VM_REG_GUEST_DS, GSEL(GUEST_DATA_SEL, SEL_KPL));
+    vm_set_register(ctx, 0, VM_REG_GUEST_ES, GSEL(GUEST_DATA_SEL, SEL_KPL));
+    vm_set_register(ctx, 0, VM_REG_GUEST_FS, GSEL(GUEST_DATA_SEL, SEL_KPL));
+    vm_set_register(ctx, 0, VM_REG_GUEST_GS, GSEL(GUEST_DATA_SEL, SEL_KPL));
+    vm_set_register(ctx, 0, VM_REG_GUEST_SS, GSEL(GUEST_DATA_SEL, SEL_KPL));
+    vm_set_register(ctx, 0, VM_REG_GUEST_TR, 0);
+    vm_set_register(ctx, 0, VM_REG_GUEST_LDTR, 0);
+
+    vm_set_register(ctx, 0, VM_REG_GUEST_CR0, CR0_PG | CR0_PE | CR0_NE);・・・・(10)
+    vm_set_register(ctx, 0, VM_REG_GUEST_CR3, ADDR_PT4);・・・・(11)
+    vm_set_register(ctx, 0, VM_REG_GUEST_CR4, CR4_PAE | CR4_VMXE);・・・・(12)
+    vm_set_register(ctx, 0, VM_REG_GUEST_EFER, EFER_LMA | EFER_LME);・・・・(13)
+    vm_set_register(ctx, 0, VM_REG_GUEST_RFLAGS, 0x2);
+    vm_set_register(ctx, 0, VM_REG_GUEST_RSP, ADDR_STACK);・・・・(14)
+    vm_set_register(ctx, 0, VM_REG_GUEST_RIP, ADDR_ENTRY);・・・・(15)
+    return (0);
+}</code></pre>
+<ol style="list-style-type: decimal">
+<li>ゲストマシンで実行するプログラムです。</li>
+<li>ALレジスタに*（ASCIIコードで0x2a）をロード、DXレジスタにシリアルポートのデータレジスタのアドレスをロード、outbでALレジスタの内容をDXレジスタで指定したポートへ書き込み、を繰り返し行っています。</li>
+<li>ここではプログラムのロード処理を省略するため、配列上にプログラムのHEXダンプを持ってきています。</li>
+<li>vm_create()でvmm.koへsysctlを発行し、VMインスタンスを作成します。 作成したインスタンスは/dev/vmm/<VM名>で表され、ioctlで制御できます。</li>
+<li>vm_setup_memory()でゲストマシンのメモリサイズを指定し、/dev/vmm/<VM名>をmmapしてプロセスのメモリ空間へゲストメモリ空間をマップしています。</li>
+<li>vm_map_gpa()でゲストメモリ空間へのポインタを取得しています。 ゲストメモリ空間上のアドレスは引数で指定しています（ここではADDR_PT4 = 2000h）。 vm_map_gpa() では渡されたアドレスをオフセットとしてポインタを計算します。</li>
+<li>ここでは、ページテーブル（pt4,pt3,pt2）、GDT、プログラム領域（entry）のアドレスを指定してそれぞれのポインタを取得しています。</li>
+<li>ゲストメモリ空間上のページテーブルを初期化しています。</li>
+<li>ゲストメモリ空間上の初期化しています。</li>
+<li>ゲストメモリ空間へ(1)で記述したプログラムをコピーしています。</li>
+<li>各セグメントレジスタを初期化してます。</li>
+<li>GDTRに作成したGDTのアドレスをセットしてます。</li>
+<li>CR0レジスタにプロテクテッドモード有効、ページング有効などのビットを設定しています。</li>
+<li>CR3レジスタに作成したページテーブルのアドレスを設定しています。</li>
+<li>CR4レジスタにPAE有効化などのビットを設定しています。</li>
+<li>EFERレジスタに64bit有効化などのビットを設定しています。</li>
+<li>RSPレジスタにスタックアドレスの初期値を設定しています。</li>
+<li>RIPレジスタにロードしたプログラムのアドレスを設定しています。</li>
+</ol>
+<h1 id="実行イメージ">実行イメージ</h1>
+<p>ビルドしたローダは以下のようなコマンドで実行出来ます（リスト４）。</p>
+<h4 id="リスト画面出力">リスト４，画面出力</h4>
+<pre><code>sudo ./load
+sudo bhyve -c 1 -m 128 -s 0:0,hostbridge -S 31,uart,stdio test1
+********************************************************************************
+********************************************************************************
+********************************************************************************
+********************************************************************************
+********************************************************************************
+********************************************************************************
+********************************************************************************
+********************************************************************************
+********************************************************************************
+***************************************************************</code></pre>
+<h1 id="まとめ">まとめ</h1>
+<p>仮想マシンには物理マシンのような制約がないため、ユーザが自由に仮想マシンの状態をプログラムしてから実行できること、その特性を利用してBIOSを使わないブート方式を実装出来ることを示しました。 次回は、仮想マシンのネットワークデバイスについて解説します。</p>
+<h1 id="ライセンス">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>PCでは通常BIOSまたはUEFIがファームウェアとして用いられています。<br />同じx86 CPUが搭載されていてもファームウェアの仕様が異なれば別々のブートローダを用意しなければならなくなるため、BIOSもUEFIもベンダ間で差異が生じないよう仕様が定められています。<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>https://github.com/grehan-freebsd/grub2-bhyve<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>FreeBSD/i386など。<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>https://github.com/syuu1228/bhyve-embedded-guest<a href="#fnref4">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
