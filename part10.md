@@ -58,9 +58,8 @@ libvmmapiはvmm.koへのioctl, sysctlを抽象化したライブラリで、/usr
 
 リスト2 bhyverun.cは/usr/sbin/bhyveの中心になるコードです。
 
+### リスト1 lib/libvmmapi/vmmapi.c
 ```
-リスト1 lib/libvmmapi/vmmapi.c
-
 ......(省略)......
  280:  int
  281:  vm_run(struct vmctx *ctx, int vcpu, uint64_t rip, struct vm_exit *vmexit)
@@ -81,9 +80,8 @@ libvmmapiはvmm.koへのioctl, sysctlを抽象化したライブラリで、/usr
 - \(1) 前回の記事の最後でユーザランドへreturnされたioctlはここに戻ってくる。
 - \(2) vmm.koから渡されたvmexit情報をコピーしてコール元へ渡す。
 
+### リスト2 usr.sbin/bhyve/bhyverun.c
 ```
-リスト2 usr.sbin/bhyve/bhyverun.c
-
 ......(省略)......
  294:  static int
  295:  vmexit_inout(struct vmctx *ctx, struct vm_exit *vme, int *pvcpu)
@@ -195,9 +193,8 @@ inout.cはI/O命令エミュレーションを行うコードです。
 実際にはI/Oポートごとの各デバイスエミュレータのハンドラを管理する役割を担っており、要求を受けるとデバイスエミュレータのハンドラを呼び出します。
 呼び出されたハンドラが実際のエミュレーション処理を行います。
 
+### リスト3 usr.sbin/bhyve/inout.c
 ```
-リスト3 usr.sbin/bhyve/inout.c
-
 ......(省略)......
   72:  int
   73:  emulate_inout(struct vmctx *ctx, int vcpu, int in, int port, int bytes,
@@ -261,9 +258,8 @@ inout.cはI/O命令エミュレーションを行うコードです。
 consport.cはBHyVe専用の準仮想化コンソールドライバです。
 現在はUART(Universal Asynchronous Receiver Transmitter)エミュレータが導入されたので必ずしも使う必要がなくなったのですが、デバイスエミュレータとしては最も単純な構造をしているので、デバイスエミュレータの例として取り上げました。
 
+### リスト4 usr.sbin/bhyve/inout.c
 ```
-リスト4 usr.sbin/bhyve/inout.c
-
 ......(省略)......
   95:  static void
   96:  ttywrite(unsigned char wb)
@@ -332,6 +328,3 @@ I/O命令によるVMExitを受けて行われるユーザランドでのエミ�
 Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
-
-参考文献
-========
