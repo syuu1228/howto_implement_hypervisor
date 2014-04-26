@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１０回 Intel VT-xを用いたハイパーバイザの実装その５「ユーザランドでのI/Oエミュレーション」</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１０回 Intel VT-xを用いたハイパーバイザの実装その５「ユーザランドでのI/Oエミュレーション」</p></h1>
+</div>
+<h1 id="はじめに">はじめに</h1>
+<p>前回は、VMX non root modeからvmm.koへVMExitしてきたときの処理を解説しました。 今回はI/O命令によるVMExitを受けて行われるユーザランドでのエミュレーション処理を解説します。</p>
+<h1 id="解説対象のソースコードについて">解説対象のソースコードについて</h1>
+<p>本連載では、FreeBSD-CURRENTに実装されているBHyVeのソースコードを解説しています。 このソースコードは、FreeBSDのSubversionリポジトリから取得できます。 リビジョンはr245673を用いています。</p>
+<p>お手持ちのPCにSubversionをインストールし、次のようなコマンドでソースコードを取得してください。</p>
+<p>svn co -r245673 svn://svn.freebsd.org/base/head src</p>
+<h1 id="usrsbinbhyveによる仮想cpuの実行処理のおさらい">/usr/sbin/bhyveによる仮想CPUの実行処理のおさらい</h1>
+<p>/usr/sbin/bhyveは仮想CPUの数だけスレッドを起動し、それぞれのスレッドが/dev/vmm/${name}に対してVM_RUN ioctlを発行します(図1)。 vmm.koはioctlを受けてCPUをVMX non root modeへ切り替えゲストOSを実行します(VMEntry)。</p>
+<div class="figure">
+<img src="figures/part10_fig1.png" title="図1" alt="VM_RUN ioctl による仮想 CPU の実行イメージ" /><p class="caption">VM_RUN ioctl による仮想 CPU の実行イメージ</p>
+</div>
+<p>VMX non root modeでハイパーバイザの介入が必要な何らかのイベントが発生すると制御がvmm.koへ戻され、イベントがトラップされます(VMExit)。</p>
+<p>イベントの種類が/usr/sbin/bhyveでハンドルされる必要のあるものだった場合、ioctlはリターンされ、制御が/usr/sbin/bhyveへ移ります。 /usr/sbin/bhyveはイベントの種類やレジスタの値などを参照し、デバイスエミュレーションなどの処理を行います。</p>
+<p>今回は、この/usr/sbin/bhyveでのデバイスエミュレーション処理の部分を見ていきます。</p>
+<h1 id="usrsbinbhyveでのio命令ハンドリング">/usr/sbin/bhyveでのI/O命令ハンドリング</h1>
+<p>前回の記事に引き続き、I/O命令でVMExitした場合について見ていきます。 VMExitに関する情報はVM_RUN ioctlの引数であるstruct vm_runのvm_exitメンバ(struct vm_exit)に書き込まれ、ioctl return時にユーザランドへコピーされます。 /usr/sbin/bhyveはこれを受け取り、vmexit-&gt;exitcodeを参照してどのようなVMExit要因だったか判定し、VMExit要因ごとの処理を呼び出します。 I/O命令でVMExitした場合のexitcodeはVM_EXIT_INOUTです。</p>
+<p>VM_EXIT_INOUTの場合、I/Oの命令のエミュレーションに必要な情報(ポート番号、アクセス幅、書き込み値(読み込み時は不要)、I/O方向(in/out))がstruct vm_exitを介してvmm.koから渡されます。</p>
+<p>/usr/sbin/bhyveはこの値をI/Oポートエミュレーションハンドラに渡し、I/Oポート番号からどのデバイスへのアクセスなのかを判定し、デバイスのハンドラを呼び出します。</p>
+<p>ハンドラの実行が終わったら、/usr/sbin/bhyveはふたたびVM_RUN ioctlを発行して、ゲストマシンの実行を再開します。</p>
+<p>では、以上のことを踏まえてソースコードの詳細を見ていきましょう。 リスト1、リスト2、リスト3、リスト4にソースコードを示します。 キャプションの丸数字で読む順番を示しています。</p>
+<h2 id="vmmapi.c-と-bhyverun.c-の解説">vmmapi.c と bhyverun.c の解説</h2>
+<p>libvmmapiはvmm.koへのioctl, sysctlを抽象化したライブラリで、/usr/sbin/bhyve, /usr/sbin/bhyvectlはこれを呼び出すことによりvmm.koへアクセスします(リスト1)。</p>
+<p>リスト2 bhyverun.cは/usr/sbin/bhyveの中心になるコードです。</p>
+<h3 id="リスト1-liblibvmmapivmmapi.c">リスト1 lib/libvmmapi/vmmapi.c</h3>
+<pre><code>......(省略)......
+ 280:  int
+ 281:  vm_run(struct vmctx *ctx, int vcpu, uint64_t rip, struct vm_exit *vmexit)
+ 282:  {
+ 283:   int error;
+ 284:   struct vm_run vmrun;
+ 285:  
+ 286:   bzero(&amp;vmrun, sizeof(vmrun));
+ 287:   vmrun.cpuid = vcpu;
+ 288:   vmrun.rip = rip;
+ 289:  
+ 290:   error = ioctl(ctx-&gt;fd, VM_RUN, &amp;vmrun);                     (1)
+ 291:   bcopy(&amp;vmrun.vm_exit, vmexit, sizeof(struct vm_exit));      (2)
+ 292:   return (error);
+ 293:  }</code></pre>
+<ul>
+<li>(1) 前回の記事の最後でユーザランドへreturnされたioctlはここに戻ってくる。</li>
+<li>(2) vmm.koから渡されたvmexit情報をコピーしてコール元へ渡す。</li>
+</ul>
+<h3 id="リスト2-usr.sbinbhyvebhyverun.c">リスト2 usr.sbin/bhyve/bhyverun.c</h3>
+<pre><code>......(省略)......
+ 294:  static int
+ 295:  vmexit_inout(struct vmctx *ctx, struct vm_exit *vme, int *pvcpu)
+ 296:  {
+ 297:   int error;
+ 298:   int bytes, port, in, out;
+ 299:   uint32_t eax;
+ 300:   int vcpu;
+ 301:  
+ 302:   vcpu = *pvcpu;
+ 303:  
+ 304:   port = vme-&gt;u.inout.port;                                   (6)
+ 305:   bytes = vme-&gt;u.inout.bytes;
+ 306:   eax = vme-&gt;u.inout.eax;
+ 307:   in = vme-&gt;u.inout.in;
+ 308:   out = !in;
+ 309:  
+......(省略)......
+ 322:   error = emulate_inout(ctx, vcpu, in, port, bytes, &amp;eax, strictio);  (7)
+ 323:   if (error == 0 &amp;&amp; in)                                       (16)
+ 324:       error = vm_set_register(ctx, vcpu, VM_REG_GUEST_RAX, eax);
+ 325:  
+ 326:   if (error == 0)
+ 327:       return (VMEXIT_CONTINUE);                               (17)
+ 328:   else {
+ 329:       fprintf(stderr, &quot;Unhandled %s%c 0x%04x\n&quot;,
+ 330:           in ? &quot;in&quot; : &quot;out&quot;,
+ 331:           bytes == 1 ? &#39;b&#39; : (bytes == 2 ? &#39;w&#39; : &#39;l&#39;), port);
+ 332:       return (vmexit_catch_inout());
+ 333:   }
+ 334:  }
+......(省略)......
+ 508:  static vmexit_handler_t handler[VM_EXITCODE_MAX] = {
+ 509:   [VM_EXITCODE_INOUT]  = vmexit_inout,                        (5)
+ 510:   [VM_EXITCODE_VMX]    = vmexit_vmx,
+ 511:   [VM_EXITCODE_BOGUS]  = vmexit_bogus,
+ 512:   [VM_EXITCODE_RDMSR]  = vmexit_rdmsr,
+ 513:   [VM_EXITCODE_WRMSR]  = vmexit_wrmsr,
+ 514:   [VM_EXITCODE_MTRAP]  = vmexit_mtrap,
+ 515:   [VM_EXITCODE_PAGING] = vmexit_paging,
+ 516:   [VM_EXITCODE_SPINUP_AP] = vmexit_spinup_ap,
+ 517:  };
+ 518:  
+ 519:  static void
+ 520:  vm_loop(struct vmctx *ctx, int vcpu, uint64_t rip)
+ 521:  {
+......(省略)......
+ 532:   while (1) {                                                 (19)
+ 533:       error = vm_run(ctx, vcpu, rip, &amp;vmexit[vcpu]);          (3)
+ 534:       if (error != 0) {
+ 535:           /*
+ 536:            * It is possible that &#39;vmmctl&#39; or some other process
+ 537:            * has transitioned the vcpu to CANNOT_RUN state right
+ 538:            * before we tried to transition it to RUNNING.
+ 539:            *
+ 540:            * This is expected to be temporary so just retry.
+ 541:            */
+ 542:           if (errno == EBUSY)
+ 543:               continue;
+ 544:           else
+ 545:               break;
+ 546:       }
+ 547:  
+ 548:       prevcpu = vcpu;
+ 549:                  rc = (*handler[vmexit[vcpu].exitcode])(ctx, &amp;vmexit[vcpu],
+ 550:                                                         &amp;vcpu);       (4)
+ 551:       switch (rc) {
+ 552:                  case VMEXIT_SWITCH:
+ 553:           assert(guest_vcpu_mux);
+ 554:           if (vcpu == -1) {
+ 555:               stats.cpu_switch_rotate++;
+ 556:               vcpu = fbsdrun_get_next_cpu(prevcpu);
+ 557:           } else {
+ 558:               stats.cpu_switch_direct++;
+ 559:           }
+ 560:           /* fall through */
+ 561:       case VMEXIT_CONTINUE:
+ 562:                          rip = vmexit[vcpu].rip + vmexit[vcpu].inst_length;   (18)
+ 563:           break;
+ 564:       case VMEXIT_RESTART:
+ 565:                          rip = vmexit[vcpu].rip;
+ 566:           break;
+ 567:       case VMEXIT_RESET:
+ 568:           exit(0);
+ 569:       default:
+ 570:           exit(1);
+ 571:       }
+ 572:   }
+ 573:   fprintf(stderr, &quot;vm_run error %d, errno %d\n&quot;, error, errno);
+ 574:  }</code></pre>
+<ul>
+<li>(6) VMExit時にvmm.koが取得した、in/out命令のエミュレーションに必要な情報<br /> （ポート番号、アクセス幅、書き込み値（読み込み時は不要）、IO方向（in／out））を展開する。</li>
+<li>(7) デバイスエミュレータを呼び出す。</li>
+<li>(16) in命令だった場合は読み込んだ結果がゲストのraxレジスタにセットされる。<br /> 今回はoutなのでここを通らない。</li>
+<li>(17) VMEXIT_CONTINUEがreturnされる。</li>
+<li>(5) VM_EXITCODE_INOUTでVMExitしてきているのでvmexit_inout()が呼ばれる。</li>
+<li>(19) whileループで再びvm_run()が実行され、ゲストマシンが再開される。</li>
+<li>(3) ioctlから抜け、ここに戻ってくる。</li>
+<li>(4) EXITCODEに対応したハンドラーを呼び出す。<br /> ここではin/out命令の実行でVMExitしてきたものとして解説を進める。</li>
+<li>(18) ゲストのripを１命令先に進める。</li>
+</ul>
+<h2 id="inout.c">inout.c</h2>
+<p>inout.cはI/O命令エミュレーションを行うコードです。 実際にはI/Oポートごとの各デバイスエミュレータのハンドラを管理する役割を担っており、要求を受けるとデバイスエミュレータのハンドラを呼び出します。 呼び出されたハンドラが実際のエミュレーション処理を行います。</p>
+<h3 id="リスト3-usr.sbinbhyveinout.c">リスト3 usr.sbin/bhyve/inout.c</h3>
+<pre><code>......(省略)......
+  72:  int
+  73:  emulate_inout(struct vmctx *ctx, int vcpu, int in, int port, int bytes,
+  74:         uint32_t *eax, int strict)
+  75:  {
+  76:   int flags;
+  77:   uint32_t mask;
+  78:   inout_func_t handler;
+  79:   void *arg;
+  80:  
+  81:   assert(port &lt; MAX_IOPORTS);
+  82:  
+  83:   handler = inout_handlers[port].handler;                     (8)
+  84:  
+  85:   if (strict &amp;&amp; handler == default_inout)
+  86:       return (-1);
+  87:  
+  88:   if (!in) {
+  89:       switch (bytes) {
+  90:       case 1:
+  91:           mask = 0xff;
+  92:           break;
+  93:       case 2:
+  94:           mask = 0xffff;
+  95:           break;
+  96:       default:
+  97:           mask = 0xffffffff;
+  98:           break;
+  99:       }
+ 100:       *eax = *eax &amp; mask;
+ 101:   }
+ 102:  
+ 103:   flags = inout_handlers[port].flags;
+ 104:   arg = inout_handlers[port].arg;
+ 105:  
+ 106:   if ((in &amp;&amp; (flags &amp; IOPORT_F_IN)) || (!in &amp;&amp; (flags &amp; IOPORT_F_OUT)))
+ 107:       return ((*handler)(ctx, vcpu, in, port, bytes, eax, arg));  (9)
+ 108:   else
+ 109:       return (-1);
+ 110:  }
+......(省略)......
+ 141:  int
+ 142:  register_inout(struct inout_port *iop)                       (10)
+ 143:  {
+ 144:   assert(iop-&gt;port &lt; MAX_IOPORTS);
+ 145:   inout_handlers[iop-&gt;port].name = iop-&gt;name;
+ 146:   inout_handlers[iop-&gt;port].flags = iop-&gt;flags;
+ 147:   inout_handlers[iop-&gt;port].handler = iop-&gt;handler;
+ 148:   inout_handlers[iop-&gt;port].arg = iop-&gt;arg;
+ 149:  
+ 150:   return (0);
+ 151:  }</code></pre>
+<ul>
+<li>(8) ポート番号ごとに登録されているIOポートハンドラを取り出す。</li>
+<li>(9) ポート番号ごとに登録されているハンドラを取り出す。</li>
+<li>(10) IOポートハンドラはregister_inout()で登録されている。</li>
+</ul>
+<h2 id="consport.c">consport.c</h2>
+<p>consport.cはBHyVe専用の準仮想化コンソールドライバです。 現在はUART(Universal Asynchronous Receiver Transmitter)エミュレータが導入されたので必ずしも使う必要がなくなったのですが、デバイスエミュレータとしては最も単純な構造をしているので、デバイスエミュレータの例として取り上げました。</p>
+<h3 id="リスト4-usr.sbinbhyveinout.c">リスト4 usr.sbin/bhyve/inout.c</h3>
+<pre><code>......(省略)......
+  95:  static void
+  96:  ttywrite(unsigned char wb)
+  97:  {
+  98:   (void) write(STDOUT_FILENO, &amp;wb, 1);                        (15)
+  99:  }
+ 100:  
+ 101:  static int
+ 102:  console_handler(struct vmctx *ctx, int vcpu, int in, int port, int bytes,
+ 103:       uint32_t *eax, void *arg)
+ 104:  {
+ 105:   static int opened;
+ 106:  
+ 107:   if (bytes == 2 &amp;&amp; in) {
+ 108:       *eax = BVM_CONS_SIG;
+ 109:       return (0);
+ 110:   }
+ 111:  
+ 112:   if (bytes != 4)
+ 113:       return (-1);
+ 114:  
+ 115:   if (!opened) {
+ 116:       ttyopen();
+ 117:       opened = 1;
+ 118:   }
+ 119:   
+ 120:   if (in)                                                     (13)
+ 121:       *eax = ttyread();
+ 122:   else
+ 123:       ttywrite(*eax);                                         (14)
+ 124:  
+ 125:   return (0);
+ 126:  }
+ 127:  
+ 128:  static struct inout_port consport = {
+ 129:   &quot;bvmcons&quot;,
+ 130:   BVM_CONSOLE_PORT,
+ 131:   IOPORT_F_INOUT,
+ 132:   console_handler                                             (12)
+ 133:  };
+ 134:  
+ 135:  void
+ 136:  init_bvmcons(void)
+ 137:  {
+ 138:  
+ 139:   register_inout(&amp;consport);                                  (11)
+ 140:  }</code></pre>
+<ul>
+<li>(15) ttywrite()はwrite()で標準出力に文字を書き込む。</li>
+<li>(13) console_handler()ではIO方向がinならttyread()、outならttywrite()を実行し、標準入出力に対してIOを行う。</li>
+<li>(14) 今回はoutが実行された場合を見ていく。<br /> eaxで指定された書き込み値をttywrite()に渡している。</li>
+<li>(12) 登録するハンドラ関数としてconsole_handler()が指定されている。</li>
+<li>(11) consportデバイスは起動時にここでハンドラを登録している。</li>
+</ul>
+<h1 id="まとめ">まとめ</h1>
+<p>I/O命令によるVMExitを受けて行われるユーザランドでのエミュレーション処理について、ソースコードを解説しました。 今回までで、ハイパーバイザの実行サイクルに関するソースコードの解説を一通り行ったので、次回はvirtioのしくみについて見ていきます。</p>
+<h1 id="ライセンス">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+
+</div>
+</body>
+</html>
