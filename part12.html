@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１２回 virtioによる準仮想化デバイス その１「Virtqueueとvirtio-netの実現」</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<div id="header">
+<h1 class="title"><p>ハイパーバイザの作り方～ちゃんと理解する仮想化技術～ 第１２回 virtioによる準仮想化デバイス その１「Virtqueueとvirtio-netの実現」</p></h1>
+</div>
+<h1 id="はじめに">はじめに</h1>
+<p>前回は、ゲストOSのI/Oパフォーマンスを大きく改善する「virtio」準仮想化ドライバの概要と、virtioのコンポーネントの1つである「Virtio PCI」について解説しました。今回はVirtqueueとこれを用いたNIC(virtio-net)の実現方法について見ていきます。</p>
+<h1 id="virtioのおさらい">virtioのおさらい</h1>
+<p>virtioは、大きく分けてVirtio PCIとVirtqueueの2つのコンポーネントからなります。Virtio PCIはゲストマシンに対してPCIデバイスとして振る舞い、次のような機能を提供します。</p>
+<ul>
+<li>デバイス初期化時のホスト&lt;-&gt;ゲスト間ネゴシエーションや設定情報通知に使うコンフィギュレーションレジスタ</li>
+</ul>
+<p>これを利用してキュー長やキュー数、キューのアドレスなどを通知する、</p>
+<ul>
+<li>割り込み(ホスト-&gt;ゲスト)、I/Oポートアクセス(ゲスト-&gt;ホスト)によるホスト&lt;-&gt;ゲスト間イベント通知機構</li>
+<li>標準的なPCIデバイスのDMA機構を用いたデータ転送機能</li>
+</ul>
+<p>があります。</p>
+<p>Virtqueueはデータ転送に使われるゲストメモリ空間上のキュー構造です。デバイスごとに1つまたは複数のキューを持つことができます。たとえば、virtio-netは送信用キュー, 受信用キュー, コントロール用キューの3つを必要とします。ゲストOSは、PCIデバイスとしてvirtioデバイスを検出して初期化し、Virtqueueをデータの入出力に、割り込みとI/Oポートアクセスをイベント通知に用いてホストに対してI/Oを依頼します。本稿では、Virtqueueについてより詳しく見ていきましょう。</p>
+<h1 id="virtqueue">Virtqueue</h1>
+<p>Virtqueueは送受信するデータをキューイング先のDescriptorが並ぶDescriptor Table、ゲストからホストへ受け渡すdescriptorを指定するAvailable Ring、ホストからゲストへ受け渡すdescriptorを指定するUsed Ringの3つからなります(図1)。</p>
+<div class="figure">
+<img src="figures/part12_fig1.png" alt="Virtqueueの構造" /><p class="caption">Virtqueueの構造</p>
+</div>
+<p>Descriptor Table, Available Ring, Used Ringのエントリ数はVirtio PCIデバイスの初期化時にVirtio headerのQUEUE_NUMへ設定した値で決められます。</p>
+<p>また、Virtqueueの領域はページサイズ<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>へアラインされている必要があります。1つのVirtqueueは片方向の通信に用いられます。このため、双方向通信をサポートするには2つのVirtqueueを使用する必要があります。通信方向によって、Available RingとUsed Ringの使われ方が異なります。</p>
+<h1 id="descriptor-table">Descriptor Table</h1>
+<p>Descriptor TableはDescriptorがQUEUE_NUM個<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>並んでいる配列です。Descriptorはデータ転送を行う都度動的にアロケートされるのではなく、Descriptor Table内の空きエントリを探して使用します。空きエントリを管理する構造はVirtqueue上にないため、ゲストドライバは空きDescriptorを記憶しておく必要があります(後述)。</p>
+<p>Descriptorは転送するデータ1つに対して1つ使われ、データのアドレス、データ長などが含まれます(表1)。</p>
+<p>データのアドレスはゲスト上の物理アドレスが用いられるため、仮想アドレス上で連続する領域でも物理ページがばらばらな場合、物理ページごとにDescriptorが1つ必要です。 このように複数のDescriptorを連続して転送したい場合には、nextで次のDescriptorの番号を指定してflagsに0x1をビットセットします。</p>
+<table>
+<caption>Descriptorの構造</caption>
+<thead>
+<tr class="header">
+<th align="left">type</th>
+<th align="left">member</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">u64</td>
+<td align="left">addr</td>
+<td align="left">データのアドレス（ゲスト物理アドレス）</td>
+</tr>
+<tr class="even">
+<td align="left">u32</td>
+<td align="left">len</td>
+<td align="left">データ長</td>
+</tr>
+<tr class="odd">
+<td align="left">u16</td>
+<td align="left">flags</td>
+<td align="left">フラグ</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">（0x1: 次のDescriptorがあるかどうか</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">0x2: ホストから見てWrite OnlyのDescriptorかどうか</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">0x4: Indirect Descriptorかどうか）</td>
+</tr>
+<tr class="odd">
+<td align="left">u16</td>
+<td align="left">next</td>
+<td align="left">次のDescriptor番号</td>
+</tr>
+</tbody>
+</table>
+<h1 id="indirect-descriptor">Indirect Descriptor</h1>
+<p>ある種のvirtioデバイスは多数のdescriptorを消費するリクエストを大量に並列に発行することにより、性能を向上させることができます。</p>
+<p>これを可能にするのがIndirect Descriptorです。Descriptorのflagsに0x4が指定された場合、addrはIndirect Descriptor Tableのアドレスを、lenはIndirect Descriptor Tableの長さ(バイト数)を示すようになります。</p>
+<p>Indirect Descriptor TableはDescriptor Tableと同様、Descriptorの配列になっています。Indirect Descriptor Tableに含まれるDescriptorの数はlen/16個になります(<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>)。</p>
+<p>それぞれのデータはIndirect Descriptor Table上のDescriptorへリンクされます。</p>
+<h1 id="available-ring">Available Ring</h1>
+<p>Available Ringはゲストからホストへ渡したいDescriptorを指定するのに使用します(表2)。ゲストはリング上の空きエントリへDescriptor番号を書き込んでidxをインクリメントします。idxは単純にインクリメントし続ける使い方が想定されているため、リング長を超えるidx値が指定された時はidxをリング長で割った余りをインデックス値として使用します。</p>
+<p>ホストは最後に処理したリング上のエントリの番号を記憶しておき(後述)、idxと比較して新しいエントリが指しているDescriptorを処理します。</p>
+<table>
+<caption>Available Ringの構造</caption>
+<thead>
+<tr class="header">
+<th align="left">type</th>
+<th align="left">member</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">u16</td>
+<td align="left">flags</td>
+<td align="left">フラグ（0x1: 割り込みの一時的な抑制）</td>
+</tr>
+<tr class="even">
+<td align="left">u16</td>
+<td align="left">idx</td>
+<td align="left">リング上で一番新しいエントリの番号</td>
+</tr>
+<tr class="odd">
+<td align="left">u16[QUEUE_NUM]</td>
+<td align="left">ring</td>
+<td align="left">Descriptor番号を書き込むリングの本体</td>
+</tr>
+<tr class="even">
+<td align="left">u16</td>
+<td align="left">used_event</td>
+<td align="left">ここで指定した番号のDescriptorが処理されるまで割り込みを抑制</td>
+</tr>
+</tbody>
+</table>
+<h1 id="used-ring">Used Ring</h1>
+<p>Used Ringはホストからゲストへ渡したいDescriptorを指定するのに使用されます(表3)。</p>
+<p>構造と使用方法は基本的にAvailable Ringと同じですが、リング上のエントリの構造がAvailable Ringと異なり、連続するDescriptorを先頭番号(id)と長さ(len)で範囲指定するようになっています(表4)。</p>
+<table>
+<caption>Used Ringの構造</caption>
+<thead>
+<tr class="header">
+<th align="left">type</th>
+<th align="left">member</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">u16</td>
+<td align="left">flags</td>
+<td align="left">フラグ（0x1: ゲストからの通知の一時的な抑制）</td>
+</tr>
+<tr class="even">
+<td align="left">u16</td>
+<td align="left">idx</td>
+<td align="left">リング上で一番新しいエントリの番号</td>
+</tr>
+<tr class="odd">
+<td align="left">UsedRingEntry[QUEUE_NUM]</td>
+<td align="left">ring</td>
+<td align="left">Descriptor番号を書き込むリングの本体</td>
+</tr>
+<tr class="even">
+<td align="left">u16</td>
+<td align="left">avail_event</td>
+<td align="left">ここで指定された番号のDescriptorが処理されるまで割り込みを抑制</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>Used Ringエントリの構造</caption>
+<thead>
+<tr class="header">
+<th align="left">type</th>
+<th align="left">member</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">u32</td>
+<td align="left">id</td>
+<td align="left">先頭のDescriptor番号</td>
+</tr>
+<tr class="even">
+<td align="left">u32</td>
+<td align="left">len</td>
+<td align="left">Descriptorチェーンの長さ</td>
+</tr>
+</tbody>
+</table>
+<h1 id="virtqueueに含まれない変数">Virtqueueに含まれない変数</h1>
+<p>Virtqueueを用いてデータ転送を行うために、Virtqueueに含まれない次の変数が必要です。</p>
+<ul>
+<li>ゲストドライバ
+<ul>
+<li>free_head......空きDescriptorを管理するため、空きDescriptorの先頭番号を保持</li>
+<li>last_used_idx......最後に処理したUsed Ring上のエントリの番号</li>
+</ul></li>
+<li>ホストドライバ
+<ul>
+<li>last_avail_idx......最後に処理したAvailable Ring上のエントリの番号</li>
+</ul></li>
+</ul>
+<h1 id="ゲスト-ホスト方向のデータ転送方法">ゲスト-&gt;ホスト方向のデータ転送方法</h1>
+<p>ゲストからホストへデータを転送するために、Descriptor Table, Available Ring, Used Ringをどのように使うかを次に示します(図2)。</p>
+<p>この方向のデータ転送では、Available Ringは転送データを含むDescriptorの通知に使われ、Used Ringは処理済みDescriptorの回収に使われます。</p>
+<div class="figure">
+<img src="figures/part12_fig2.png" alt="ゲスト-&gt;ホスト方向データ転送のイメージ" /><p class="caption">ゲスト-&gt;ホスト方向データ転送のイメージ</p>
+</div>
+<h2 id="ゲストドライバ">ゲストドライバ</h2>
+<p>図2の番号にそって解説します。</p>
+<ol style="list-style-type: decimal">
+<li>ドライバの初期化時にあらかじめすべてのDescriptorのnextの値を隣り合ったDescriptorのエントリ番号に設定し空きDescriptorのチェーンを作成、チェーンの先頭Descriptorの番号をfree_headに代入しておく</li>
+<li>free_headの値から空きDescriptor番号を取得</li>
+<li>Descriptorのaddrにデータのアドレス、lenにデータ長を代入</li>
+<li>Descriptorのnextが指す次の空きDescriptorの番号をfree_headへ代入</li>
+<li>Available Ringのidxが指す空きエントリにDescriptorの番号を代入</li>
+<li>Available Ringのidxをインクリメント(新しい空きエントリ)</li>
+<li>Virtio HeaderのQUEUE_SELにキュー番号を書き込み</li>
+<li>未処理データがあることをホストへ通知するためVirtio HeaderのQUEUE_NOTIFYへ書き込み<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a></li>
+</ol>
+<h2 id="ホストドライバ">ホストドライバ</h2>
+<p>図2の番号にそって解説します。</p>
+<ol start="9" style="list-style-type: decimal">
+<li>ゲストからの通知を受けてlast_avail_idxとAvailable Ringのidxを比較、新しいエントリが指しているDescriptorを順に処理、last_avail_idxをインクリメント</li>
+<li>Used Flagsのidxが指す次の空きエントリに処理済みDescriptorの番号を代入</li>
+<li>Used Flagsのidxをインクリメント</li>
+<li>処理が終わったことを通知するためゲストへ割り込み</li>
+</ol>
+<h2 id="ゲストドライバ-1">ゲストドライバ</h2>
+<p>図2の番号にそって解説します。</p>
+<ol start="13" style="list-style-type: decimal">
+<li>ホストからの割り込みを受けてlast_used_idxとUsed Ringのidxを比較、新しいエントリが指している処理済みDescriptorを順に回収、last_used_idxをインクリメント</li>
+<li>回収対象のDescriptorを空きDescriptorのチェーンへ戻し、free_headを更新</li>
+</ol>
+<h1 id="ホスト-ゲスト方向のデータ転送方法">ホスト-&gt;ゲスト方向のデータ転送方法</h1>
+<p>ホストからゲストへデータを転送するために、Descriptor Table, Available Ring, Used Ringをどのように使うかを次に示します(図3)。</p>
+<p>この方向のデータ転送では、Available Ringは空きDescriptorの受け渡しに使われ、Used Ringは転送データを含むDescriptorの通知に使われます。</p>
+<div class="figure">
+<img src="figures/part12_fig3.png" alt="ホスト-&gt;ゲスト方向データ転送のイメージ" /><p class="caption">ホスト-&gt;ゲスト方向データ転送のイメージ</p>
+</div>
+<h2 id="ゲストドライバ-2">ゲストドライバ</h2>
+<p>図3の番号にそって解説します。</p>
+<ol style="list-style-type: decimal">
+<li>ドライバの初期化時にあらかじめすべてのDescriptorのnextの値を隣り合ったDescriptorのエントリ番号に設定し空きDescriptorのチェーンを作成、 チェーンの先頭Descriptorの番号をfree_headに代入しておく</li>
+<li>Available Ringのidxが指す次の空きエントリに空きDescriptorチェーンの先頭番号を代入</li>
+<li>Available Ringのidxをインクリメント</li>
+<li>Virtio HeaderのQUEUE_SELにキュー番号を書き込み</li>
+<li>未処理データがあることをホストへ通知するためVirtio HeaderのQUEUE_NOTIFYへ書き込み</li>
+</ol>
+<h2 id="ホストドライバ-1">ホストドライバ</h2>
+<p>図3の番号にそって解説します。</p>
+<ol start="6" style="list-style-type: decimal">
+<li>データ送信要求を受けてAvailable Ringを参照、必要な数のDescriptorを取り出す</li>
+<li>DescriptorをAvailable Ring上の、Descriptorチェーンから切り離す</li>
+<li>Descriptorのaddrにデータのアドレス、lenにデータ長を代入</li>
+<li>Used Ringのidxが指す次の空きエントリにDescriptorの番号を代入</li>
+<li>Used Ringのidxをインクリメント</li>
+<li>未処理データがあることを通知するためゲストへ割り込み</li>
+</ol>
+<h2 id="ゲストドライバ-3">ゲストドライバ</h2>
+<p>図3の番号にそって解説します。</p>
+<ol start="12" style="list-style-type: decimal">
+<li>ホストからの割り込みを受けてlast_used_idxとUsed Ringのidxを比較、新しいエントリが指している処理済みDescriptorを順に処理、last_used_idxをインクリメント</li>
+<li>処理済みDescriptorを空きDescriptorのチェーンへ戻し、Available Ringを更新</li>
+</ol>
+<h2 id="virtio-netの実現方法">virtio-netの実現方法</h2>
+<p>virtio-netは受信キュー、送信キュー、コントロールキューの3つのVirtqueueからなります。 送信キューとコントロールキューはゲスト-&gt;ホスト方向のデータ転送方法で解説した手順でデータを転送します。受信キューはホスト-&gt;ゲスト方向のデータ転送方法で解説した手順でデータを転送します。受信キュー, 送信キューでは、パケットごとに1つのDescriptorを使用します。</p>
+<p>Descriptorのaddrには直接パケットのアドレスを指定しますが、ホストドライバからゲストドライバへいくつかの情報を通知するため、パケットの手前に専用の構造体を追加しています(表5、図4)。</p>
+<table>
+<caption>struct virtio_net_hdr</caption>
+<thead>
+<tr class="header">
+<th align="left">type</th>
+<th align="left">member</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">u8</td>
+<td align="left">flags</td>
+<td align="left">フラグ（Checksum offload）</td>
+</tr>
+<tr class="even">
+<td align="left">u8</td>
+<td align="left">gso_type</td>
+<td align="left">GSOによるパケットタイプ情報</td>
+</tr>
+<tr class="odd">
+<td align="left">u16</td>
+<td align="left">hdr_len</td>
+<td align="left">Ethernet + IP + TCP/UDPヘッダの長さ</td>
+</tr>
+<tr class="even">
+<td align="left">u16</td>
+<td align="left">gso_size</td>
+<td align="left">データ長</td>
+</tr>
+<tr class="odd">
+<td align="left">u16</td>
+<td align="left">csum_start</td>
+<td align="left">チェックサムフィールドの位置</td>
+</tr>
+<tr class="even">
+<td align="left">u16</td>
+<td align="left">csum_offset</td>
+<td align="left">チェックサムの計算開始位置</td>
+</tr>
+</tbody>
+</table>
+<div class="figure">
+<img src="figures/part12_fig4.png" alt="送受信キューのデータ構造" /><p class="caption">送受信キューのデータ構造</p>
+</div>
+<p>コントロールキューでは、コマンド用構造体(表6、図5)にコマンド名を設定してゲストからホストへメッセージ送出します。コマンドに付属データが必要な場合は、コマンド用構造体の直後に続いてデータを配置します。コマンドはクラス(大項目)とコマンド(小項目)で整理されており、次のような種類があります。</p>
+<table>
+<caption>struct virtio_net_ctrl_hdr</caption>
+<thead>
+<tr class="header">
+<th align="left">type</th>
+<th align="left">member</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">u8</td>
+<td align="left">class</td>
+<td align="left">クラス（大項目）</td>
+</tr>
+<tr class="even">
+<td align="left">u8</td>
+<td align="left">cmd</td>
+<td align="left">コマンド（小項目）</td>
+</tr>
+</tbody>
+</table>
+<div class="figure">
+<img src="figures/part12_fig5.png" alt="コントロールキューのデータ構造" /><p class="caption">コントロールキューのデータ構造</p>
+</div>
+<p>VIRTIO_NET_CTRL_RXクラスは次のようなコマンドを持ち、NICのプロミスキャスモード、ブロードキャスト受信、マルチキャスト受信などの有効/無効化を行います。</p>
+<ul>
+<li>VIRTIO_NET_CTRL_RX_PROMISC</li>
+<li>VIRTIO_NET_CTRL_RX_ALLMULTI</li>
+<li>VIRTIO_NET_CTRL_RX_ALLUNI</li>
+<li>VIRTIO_NET_CTRL_RX_NOMULTI</li>
+<li>VIRTIO_NET_CTRL_RX_NOUNI</li>
+<li>VIRTIO_NET_CTRL_RX_NOBCAST</li>
+</ul>
+<p>VIRTIO_NET_CTRL_MACクラスは次のようなコマンドを持ち、MACフィルタテーブルの設定に使用します。</p>
+<ul>
+<li>VIRTIO_NET_CTRL_MAC_TABLE_SET</li>
+<li>VIRTIO_NET_CTRL_MAC_ADDR_SET</li>
+</ul>
+<p>VIRTIO_NET_CTRL_VLANクラスは次のようなコマンドを持ち、VLANの設定に使用します。</p>
+<ul>
+<li>VIRTIO_NET_CTRL_VLAN_ADD</li>
+<li>VIRTIO_NET_CTRL_VLAN_DEL</li>
+</ul>
+<p>VIRTIO_NET_CTRL_ANNOUNCEクラスは次のようなコマンドを持ち、リンクステータス通知に対してackを返すのに使用します。</p>
+<ul>
+<li>VIRTIO_NET_CTRL_ANNOUNCE</li>
+<li>VIRTIO_NET_CTRL_ANNOUNCE_ACK</li>
+</ul>
+<p>VIRTIO_NET_CTRL_MQクラスクラスは次のようなコマンドを持ち、マルチキューのコンフィギュレーションに使用します。</p>
+<ul>
+<li>VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET</li>
+<li>VIRTIO_NET_CTRL_MQ_VQ_PAIRS_MIN</li>
+<li>VIRTIO_NET_CTRL_MQ_VQ_PAIRS_MAX</li>
+</ul>
+<h1 id="まとめ">まとめ</h1>
+<p>Virtqueueと、これを用いたNIC(virtio-net)の実現方法について解説しました。次号では、これまでの総集編で、仮想化システムの全体像を振り返ります。</p>
+<h1 id="ライセンス">ライセンス</h1>
+<p>Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は クリエイティブ・コモンズ 表示 - 継承 4.0 国際 ライセンスの下に提供されています。</p>
+<div class="references">
+
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>ページサイズ = 4KB<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>Virtio HeaderのQUEUE_NUMで指定する。<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>1つのDescriptorの長さが16bytesであるため。<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>QUEUE_NOTIFYへ書き込むことによりVMExitが発生し、ホスト側へ制御が移ることを意図している。<a href="#fnref4">↩</a></p></li>
+</ol>
+</div>
+</body>
+</html>
