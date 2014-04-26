@@ -58,6 +58,8 @@ GUEST_RIPはVMExit時に保存されますが、HOST_RIPはVMEntry時に保存�
 
 vmm_dev.cは、sysctlによる/dev/vmm/\${name}の作成・削除と/dev/vmm/\${name}に対するopen(), close(), read(), write(), mmap(), ioctl()のハンドラを定義しています。
 ここでは/dev/vmm/\${name}の作成とVM_RUN ioctlについてのみ見ていきます。
+
+#### リスト1
 ```
 ......(省略)......
 137: static int
@@ -93,6 +95,8 @@ vmm_dev.cは、sysctlによる/dev/vmm/\${name}の作成・削除と/dev/vmm/\${
 
 vmm.cは、IntelVT-xとAMD-Vの2つの異なるハードウェア仮想化支援機能のラッパー関数を提供しています(このリビジョンではラッパーのみが実装されており、AMD-Vの実装は行われていません)。
 Intel/AMD両アーキテクチャ向けの各関数はvmm_ops構造体で抽象化され、207〜210行目のコードCPUを判定してどちらのアーキテクチャの関数群を使用するかを決定しています。
+
+#### リスト2
 ```
 ......(省略)......
  119:  static struct vmm_ops *ops;
@@ -143,6 +147,8 @@ Intel/AMD両アーキテクチャ向けの各関数はvmm_ops構造体で抽象�
 
 intel/ディレクトリにはIntel VT-xに依存したコード群が置かれています。
 vmx.cはその中心的なコードで、vmm.cで登場したvmm_ops_intelもここで定義されています。
+
+#### リスト3
 ```
 ......(省略)......
  666:  static void *
@@ -245,6 +251,8 @@ vmcs.cはVMCSの設定に関するコードを提供しています。
 ここではHOST_RIPの書き込みに注目しています。
 なお、vmwriteを行う前にvmptrld命令を発行していますが、これはCPUへVMCSポインタをセットしてVMCSへアクセス可能にするためです。
 同様に、vmwriteを行った後にvmclear命令を発行していますが、これは変更されたVMCSをメモリへライトバックさせるためです。
+
+#### リスト4
 ```
 ......(省略)......
  309:  int
@@ -276,6 +284,8 @@ vmcs.cはVMCSの設定に関するコードを提供しています。
 
 vmx_support.SはC言語で記述できない、コンテキストの退避/復帰やVT-x拡張命令の発行などのコードを提供しています。
 ここでは、ホストレジスタの退避(vmx_setjmp)とVMEntry(vmx_launch)の処理について見ています。
+
+#### リスト5
 ```
 ......(省略)......
   69:  #define	VMX_GUEST_RESTORE						\           (17)
@@ -372,6 +382,3 @@ vmm.koがVM_RUN ioctlを受け取ってからVMEntryするまでにどのよう�
 Copyright (c) 2014 Takuya ASADA. 全ての原稿データ は
 クリエイティブ・コモンズ 表示 - 継承 4.0 国際
 ライセンスの下に提供されています。
-
-参考文献
-========
