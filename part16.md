@@ -108,7 +108,7 @@ OSへは、MSI割り込みを使用して通知されます。
 IOMMUのアドレス変換を高速に行うには、通常のMMUと同じようにアドレス変換結果のキャッシュが必要です。
 通常のMMUではこのような機構のことをTLBを呼びますが、IOMMUではIOTLBと呼びます。
 通常のMMUのTLBでは、TLBエントリが古くなったときにinvalidateと呼ばれる操作によりエントリを削除します。
-このときのinvalidateの粒度は、グローバルなinvalidate・プロセス単位のinvalidate([^3]:・ページ単位のinvalidateなどが選べます。
+このときのinvalidateの粒度は、グローバルなinvalidate・プロセス単位のinvalidate[^3]:・ページ単位のinvalidateなどが選べます。
 VT-dのIOTLBでは、グローバルなinvalidate・デバイス単位のinvalidate・VM単位（ドメインと呼ばれる）のinvalidate・ページ単位のinvalidateが行えるようになっています。
 
 [^3]: Tagged TLBの場合。

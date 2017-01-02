@@ -124,7 +124,7 @@ VMMはCONFIG_ADDRESSレジスタに設定されたBus Number・Device Number・F
 VMMはゲストからデバイスのポートへI/O命令を受け、同じポートへI/O命令を発行し結果をゲストに返します。
 あるいは、ゲスト側とホスト側でI/Oポートの番号が一致している場合[^7]は、前述の方法をとらずにVMCSのVM-Execution Control FieldsにあるI/O-Bitmapで対象となるポート番号のビットを0に設定することでVMExitを起こさずにPCIデバイスへアクセスできます。
 
-[^7]: VMMが独自のBase Address Registerを用意しておらず、実デバイスのものをそのままゲストに見せている場合。
+[^7]: VMMが独自のBase Address Registerを用意しておらず、実デバイスそのものをそのままゲストに見せている場合。
 
 ## PCI Memory Spaceのパススルー
 
